@@ -20,10 +20,6 @@ import { sortTripsByDateDesc, findDefaultTrip } from './utils/tripHelpers'
 import {
   SUPPORTED_CURRENCIES,
   ATTACHMENT_BUCKET,
-  ATTACHMENT_DB_NAME,
-  ATTACHMENT_STORE_NAME,
-  MAX_ATTACHMENT_BYTES,
-  MAX_ATTACHMENT_EDGE,
 } from './constants/appConstants';
 
 // LocalStorage 帳目工具
@@ -39,9 +35,24 @@ import {
 import type {
   ExpenseItem,
   EditExpenseDraft,
-  LocalAttachmentRecord,
   AdminUser,
 } from './types';
+
+// IndexedDB 附件工具
+import {
+  saveLocalAttachment,
+  getLocalAttachment,
+  updateLocalAttachmentExpenseId,
+  findLocalAttachmentIdByExpense,
+  deleteLocalAttachment,
+} from './storage/attachmentStorage';
+
+// 附件工具（檔名處理、圖片壓縮、檔案格式化）
+import {
+  sanitizeStorageFileName,
+  formatFileSize,
+  compressImageFile,
+} from './utils/attachmentUtils';
 
 // --- 初始化 Supabase 雲端客戶端 ---
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -57,212 +68,9 @@ const sanitizeFilePart = (value: string) => {
     .slice(0, 80) || 'travel-expenses';
 };
 
-const openAttachmentDb = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(ATTACHMENT_DB_NAME, 1);
 
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(ATTACHMENT_STORE_NAME)) {
-        const store = db.createObjectStore(ATTACHMENT_STORE_NAME, { keyPath: 'id' });
-        store.createIndex('expenseId', 'expenseId', { unique: false });
-        store.createIndex('tripId', 'tripId', { unique: false });
-      }
-    };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
 
-const saveLocalAttachment = async (
-  file: File,
-  expenseId: string,
-  tripId: string,
-  existingId?: string | null
-): Promise<LocalAttachmentRecord> => {
-  const db = await openAttachmentDb();
-  const id = existingId || `att_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const record: LocalAttachmentRecord = {
-    id,
-    expenseId,
-    tripId,
-    fileName: file.name,
-    mimeType: file.type || 'application/octet-stream',
-    size: file.size,
-    blob: file,
-    createdAt: new Date().toISOString()
-  };
-
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(ATTACHMENT_STORE_NAME, 'readwrite');
-    tx.objectStore(ATTACHMENT_STORE_NAME).put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-
-  db.close();
-  return record;
-};
-
-const getLocalAttachment = async (id: string): Promise<LocalAttachmentRecord | null> => {
-  const db = await openAttachmentDb();
-  const record = await new Promise<LocalAttachmentRecord | undefined>((resolve, reject) => {
-    const tx = db.transaction(ATTACHMENT_STORE_NAME, 'readonly');
-    const request = tx.objectStore(ATTACHMENT_STORE_NAME).get(id);
-    request.onsuccess = () => resolve(request.result as LocalAttachmentRecord | undefined);
-    request.onerror = () => reject(request.error);
-  });
-
-  db.close();
-  return record || null;
-};
-
-const updateLocalAttachmentExpenseId = async (
-  id: string | null | undefined,
-  expenseId: string,
-  tripId: string
-) => {
-  if (!id) return;
-  const record = await getLocalAttachment(id);
-  if (!record) return;
-  const db = await openAttachmentDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(ATTACHMENT_STORE_NAME, 'readwrite');
-    tx.objectStore(ATTACHMENT_STORE_NAME).put({ ...record, expenseId, tripId });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
-};
-
-const findLocalAttachmentIdByExpense = async (expenseId: string, tripId: string): Promise<string | null> => {
-  const db = await openAttachmentDb();
-  const id = await new Promise<string | null>((resolve, reject) => {
-    const tx = db.transaction(ATTACHMENT_STORE_NAME, 'readonly');
-    const store = tx.objectStore(ATTACHMENT_STORE_NAME);
-    const request = store.openCursor();
-
-    request.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest).result as IDBCursorWithValue | null;
-      if (!cursor) {
-        resolve(null);
-        return;
-      }
-      const record = cursor.value as LocalAttachmentRecord;
-      if (record.expenseId === expenseId && record.tripId === tripId) {
-        resolve(record.id);
-        return;
-      }
-      cursor.continue();
-    };
-
-    request.onerror = () => reject(request.error);
-  });
-  db.close();
-  return id;
-};
-
-const deleteLocalAttachment = async (id?: string | null) => {
-  if (!id) return;
-  const db = await openAttachmentDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(ATTACHMENT_STORE_NAME, 'readwrite');
-    tx.objectStore(ATTACHMENT_STORE_NAME).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
-};
-
-const sanitizeStorageFileName = (value: string) => {
-  const ascii = value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  const clean = ascii
-    .replace(/[^A-Za-z0-9._-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .replace(/^[.]+/, '')
-    .slice(0, 120);
-
-  return clean || 'receipt-photo';
-};
-
-const formatFileSize = (bytes?: number | null) => {
-  if (!bytes) return '';
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-};
-
-const canvasToBlob = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error('canvas-export-failed'));
-    }, 'image/jpeg', quality);
-  });
-};
-
-const loadImageFromFile = (file: File): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('image-load-failed'));
-    };
-    image.src = url;
-  });
-};
-
-const compressImageFile = async (file: File): Promise<File> => {
-  if (!file.type.startsWith('image/')) {
-    throw new Error('請選擇照片檔案。');
-  }
-
-  if (file.size <= MAX_ATTACHMENT_BYTES) return file;
-
-  let image: HTMLImageElement;
-  try {
-    image = await loadImageFromFile(file);
-  } catch {
-    throw new Error('瀏覽器無法解碼這張照片；若檔案超過 1MB，請先轉成 JPG 或 PNG 後再選擇。');
-  }
-  let width = image.naturalWidth || image.width;
-  let height = image.naturalHeight || image.height;
-  const edge = Math.max(width, height);
-  const initialScale = edge > MAX_ATTACHMENT_EDGE ? MAX_ATTACHMENT_EDGE / edge : 1;
-  width = Math.max(1, Math.round(width * initialScale));
-  height = Math.max(1, Math.round(height * initialScale));
-
-  for (const scale of [1, 0.85, 0.7, 0.55, 0.42, 0.32]) {
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(width * scale));
-    canvas.height = Math.max(1, Math.round(height * scale));
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('瀏覽器無法壓縮這張照片。');
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-    for (const quality of [0.82, 0.72, 0.62, 0.52, 0.42]) {
-      const blob = await canvasToBlob(canvas, quality);
-      if (blob.size <= MAX_ATTACHMENT_BYTES) {
-        const originalBaseName = file.name.replace(/\.[^.]+$/, '');
-        return new File([blob], `${originalBaseName}.jpg`, {
-          type: 'image/jpeg',
-          lastModified: Date.now()
-        });
-      }
-    }
-  }
-
-  throw new Error('照片壓縮後仍超過 1MB，請改用較小或較低解析度的照片。');
-};
 
 export default function App() {
   // 1. 使用者登入狀態
