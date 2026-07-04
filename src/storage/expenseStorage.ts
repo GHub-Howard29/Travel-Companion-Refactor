@@ -66,7 +66,12 @@ export const toStoredExpenseItem = (
   if (!tripId) return null;
 
   return {
-    id: typeof value.id === 'string' ? value.id : `cached_${Math.random()}`,
+    // Supabase 的 id 為 bigint（number），
+    // 先轉成字串保存；只有完全沒有 id 時才建立暫時 cached id。
+    id:
+    value.id !== undefined && value.id !== null
+    ? String(value.id)
+    : `cached_${Math.random()}`,
     trip_id: tripId,
     title: typeof value.title === 'string' && value.title ? value.title : '未命名消費',
     amount: Number(value.amount) || 0,
