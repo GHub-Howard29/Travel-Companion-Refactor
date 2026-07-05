@@ -15,7 +15,7 @@ P2（離線新增）→ 應該顯示 2，但仍顯示 1。
 原因:資料正確、同步正確，只是 UI Badge 沒有立即刷新。
 這已經不是資料遺失或同步失敗，而是 UI 更新時機的問題。
 
-狀態:待修正。
+狀態:已修正。
 
 ### BUG003
 
@@ -41,10 +41,3 @@ const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
 狀態:待修正。
 
-現象：
-
-
-
-初步分析：
-
-從目前看到的 App.tsx，checkedItems 只存在 React state，沒有持久化，因此重新整理會遺失是符合目前程式行為的。
