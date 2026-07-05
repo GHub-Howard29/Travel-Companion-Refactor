@@ -1108,15 +1108,20 @@ useEffect(() => {
     return itemCurrency === effectiveActiveCurrency;
   });
 
-  const pendingAttachmentCount = isUsingSharedExpenseBook
-    ? safeExpenses.filter(
-        (item) =>
-          item.local_attachment_id &&
-          item.attachment_status !== "synced" &&
-          item.attachment_status !== "none" &&
-          !String(item.id).startsWith("local_"),
-      ).length
-    : 0;
+// =========================================
+// 待同步照片數
+// 只要本機存在附件、且尚未同步完成，
+// 不論 Expense 是雲端資料或離線新增(local_)
+// 都應列入待同步照片數。
+// =========================================
+const pendingAttachmentCount = isUsingSharedExpenseBook
+  ? safeExpenses.filter(
+      (item) =>
+        item.local_attachment_id &&
+        item.attachment_status !== "synced" &&
+        item.attachment_status !== "none",
+    ).length
+  : 0;
 
   const hasUnsyncedLocalExpenseAttachments = safeExpenses.some(
     (item) =>
