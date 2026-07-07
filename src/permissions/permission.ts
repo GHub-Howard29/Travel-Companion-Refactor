@@ -4,16 +4,10 @@
  * Permission（權限）定義
  * ==========================================
  *
- * 本檔案負責：
- * 1. 定義 Permission Context（權限情境）
- * 2. 定義 Permission（權限）
- * 3. 建立 Permission Object（權限物件）
- *
- * 不負責：
- * - React
- * - Supabase
- * - Storage
- * - IndexedDB
+ * Design Principle（設計原則）
+ * ------------------------------------------
+ * Permission（權限）只依賴 PermissionContext（權限情境）。
+ * 不依賴 React、Supabase、Storage 或任何外部系統。
  */
 
 import { ROLE, type Role } from "./roles";
@@ -21,74 +15,54 @@ import { ROLE, type Role } from "./roles";
 /**
  * Permission Context（權限情境）
  *
- * 建立權限時所需的最小資訊。
+ * Workspace（工作區）先整理好所有事實（Facts），
+ * Permission（權限）只負責根據這些事實建立權限。
  */
 export interface PermissionContext {
-  /** 目前登入角色 */
+  /** 使用者角色 */
   role: Role;
 
-  /** 目前選擇的 Trip */
-  selectedTripId: string;
+  /** 是否已登入 */
+  isSignedIn: boolean;
 
-  /** 此角色所屬的 Trip（若沒有則為 null） */
-  assignedTripId: string | null;
+  /** 是否屬於目前選擇的 Trip */
+  isAssignedTrip: boolean;
 }
 
 /**
  * Permission（權限）
- *
- * 所有畫面都只應判斷 Permission，
- * 不直接判斷 Role。
  */
 export interface Permission {
-  /** 是否可使用雲端帳本 */
   canUseCloudExpense: boolean;
-
-  /** 是否可使用本機帳本 */
   canUseLocalExpense: boolean;
 
-  /** 是否可查看 Reference */
   canViewReference: boolean;
-
-  /** 是否可編輯 Reference */
   canEditReference: boolean;
 
-  /** 是否可查看共用 Checklist */
   canViewSharedChecklist: boolean;
-
-  /** 是否可編輯共用 Checklist */
   canEditSharedChecklist: boolean;
 
-  /** 是否可使用我的 Checklist */
   canUseMyChecklist: boolean;
 }
 
 /**
- * 建立 Permission Object（權限物件）
+ * 建立 Permission（權限）
  */
 export function createPermission(
   context: PermissionContext,
 ): Permission {
-  const isSuperAdmin =
-    context.role === ROLE.SUPER_ADMIN;
-
-  const isTripEditor =
-    context.role === ROLE.TRIP_EDITOR &&
-    context.assignedTripId === context.selectedTripId;
-
-  const isEditor = isSuperAdmin || isTripEditor;
-
-  const isSignedIn =
-    context.role !== ROLE.GUEST;
+  const isEditor =
+    context.role === ROLE.SUPER_ADMIN ||
+    (context.role === ROLE.TRIP_EDITOR && context.isAssignedTrip);
 
   return {
     // Expense（記帳）
     canUseCloudExpense: isEditor,
-    canUseLocalExpense: isSignedIn,
+    canUseLocalExpense: context.isSignedIn,
 
     // Reference（旅行資訊）
     canViewReference: true,
-    canEditReference: isSuperAdmin,
+    canEditReference: context.role === ROLE.SUPER_ADMIN,
 
     // Shared Checklist（共用清單）
     canViewSharedChecklist: true,
