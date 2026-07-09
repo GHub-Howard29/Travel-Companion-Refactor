@@ -39,6 +39,7 @@ import {
 
 import {
   readStoredOtherInfoItems,
+  writeStoredOtherInfoItems,
 } from "../storage/otherInfoStorage";
 
 // ================================
@@ -102,5 +103,88 @@ export const getItems = (
     mergedItemsById.set(item.id, item);
   });
 
-  return sortOtherInfoItemsByOrder(Array.from(mergedItemsById.values()));
+  return sortOtherInfoItemsByOrder(
+    Array.from(mergedItemsById.values()).filter((item) => !item.isDeleted),
+  );
+};
+
+export const createOtherInfoItem = (
+  tripId: string,
+  folderId: string,
+  title: string,
+  content: string,
+): OtherInfoItem[] => {
+  const now = new Date().toISOString();
+  const storedItems = readStoredOtherInfoItems(tripId);
+  const nextOrder =
+    getItems(tripId).filter((item) => item.folderId === folderId).length + 1;
+
+  writeStoredOtherInfoItems(tripId, [
+    ...storedItems,
+    {
+      id: crypto.randomUUID(),
+      tripId,
+      folderId,
+      title,
+      content,
+      order: nextOrder,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  return getItems(tripId);
+};
+
+export const updateOtherInfoItem = (
+  tripId: string,
+  itemId: string,
+  patch: Pick<OtherInfoItem, "folderId" | "title" | "content">,
+): OtherInfoItem[] => {
+  const currentItem = getItems(tripId).find((item) => item.id === itemId);
+
+  if (!currentItem) {
+    return getItems(tripId);
+  }
+
+  const storedItems = readStoredOtherInfoItems(tripId);
+  const nextItem: OtherInfoItem = {
+    ...currentItem,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  const hasStoredItem = storedItems.some((item) => item.id === itemId);
+  const nextStoredItems = hasStoredItem
+    ? storedItems.map((item) => (item.id === itemId ? nextItem : item))
+    : [...storedItems, nextItem];
+
+  writeStoredOtherInfoItems(tripId, nextStoredItems);
+
+  return getItems(tripId);
+};
+
+export const deleteOtherInfoItem = (
+  tripId: string,
+  itemId: string,
+): OtherInfoItem[] => {
+  const currentItem = getItems(tripId).find((item) => item.id === itemId);
+
+  if (!currentItem) {
+    return getItems(tripId);
+  }
+
+  const storedItems = readStoredOtherInfoItems(tripId);
+  const deleteMarker: OtherInfoItem = {
+    ...currentItem,
+    isDeleted: true,
+    updatedAt: new Date().toISOString(),
+  };
+  const hasStoredItem = storedItems.some((item) => item.id === itemId);
+  const nextStoredItems = hasStoredItem
+    ? storedItems.map((item) => (item.id === itemId ? deleteMarker : item))
+    : [...storedItems, deleteMarker];
+
+  writeStoredOtherInfoItems(tripId, nextStoredItems);
+
+  return getItems(tripId);
 };

@@ -1,9 +1,9 @@
 /**
  * Other Info Storage（其他資訊本機儲存）
  *
- * 負責讀取與寫入「其他資訊」唯讀內容資料。
+ * 負責讀取與寫入「其他資訊」本機覆寫資料。
  *
- * V3-1 階段先使用 localStorage 作為本機資料來源，
+ * V3-1 階段先使用 localStorage 作為新增 / 編輯 / 刪除資料來源，
  * 未來若改為 JSON 檔、IndexedDB 或 Supabase，
  * 可再集中調整此檔案。
  */

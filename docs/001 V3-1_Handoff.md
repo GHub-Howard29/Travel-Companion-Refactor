@@ -6,7 +6,7 @@
 
 # 目前開發狀態
 
-V3-1 已完成底層架構建立，並已完成 Other Info / Reference 只讀工具第一階段串接。
+V3-1 已完成底層架構建立，並已完成 Other Info / Reference 簡易本機管理工具第一階段串接。
 
 目前已完成：
 
@@ -41,18 +41,24 @@ V3-1 已完成底層架構建立，並已完成 Other Info / Reference 只讀工
 - otherInfoRepository.ts
 - otherInfoService.ts
 - otherInfoData.ts（第一批 seed data）
-- OtherInfoPage 只讀 UI
+- OtherInfoPage 簡易管理 UI
 - App.tsx otherInfo 類型串接
 - AppSidebar.tsx otherInfo icon mapping
 - Trip sidebarConfig 新增「其他資訊」
+- Other Info 內容 URL 自動轉換為可點擊超連結
 
 目前：
 
 - 自由行與跟團旅程皆已顯示「其他資訊」
-- Reference 資料由 seed data + local stored data 合併後唯讀呈現
+- Reference 資料由 seed data + local stored data 合併後呈現
+- 可新增、編輯、刪除 Other Info item
+- 目前只存 localStorage，不同步雲端
+- seed data 保留為預設資料
+- 編輯 seed item 會以 localStorage 覆蓋
+- 刪除 seed item 會寫入 `isDeleted` 標記
 - Folder chips 自動換行，不使用水平 scrollbar
-- 顯示資料筆數、空狀態與只讀 item card
-- 不提供 APP 內新增、編輯、刪除
+- 顯示資料筆數、空狀態與 item card
+- 內容中的 `http` / `https` URL 會自動轉為超連結並以新分頁開啟
 
 ---
 
@@ -67,6 +73,9 @@ OtherInfoService
 - getDefaultFolders()
 - getFolders()
 - getItems()
+- createOtherInfoItem()
+- updateOtherInfoItem()
+- deleteOtherInfoItem()
 
 作為 UI 唯一資料入口。
 
@@ -122,6 +131,9 @@ npm.cmd run build
    - 左側是否出現「其他資訊」
    - 自由行 / 跟團切換後資料是否各自正確
    - folder chips 是否換行整齊
+   - 新增、編輯、刪除後 localStorage 是否正確保留
+   - 編輯 / 刪除 seed item 後是否正確覆蓋預設資料
+   - `http` / `https` URL 是否可點擊並開新分頁
    - 原本文字頁是否仍維持 Text Page 呈現
 
 2. 若 UI / 資料 OK，下一個功能建議進入 Checklist Module 重構：

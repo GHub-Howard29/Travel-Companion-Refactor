@@ -1,5 +1,10 @@
 # Travel Companion Agent Guide
 
+## Commit Message Language
+
+- 當使用者要求由 Codex 建立 Git commit 時，commit message 一律使用繁體中文。
+- commit message 應簡潔描述實際變更，例如：`新增其他資訊本機管理`、`修正共同檢查清單名稱`。
+- 不要使用英文 commit message，除非使用者在該次請求中明確指定。
 本文件是給 AI agent / coding assistant 進入本專案時的工作入口。請先讀本文件，再依任務需要查閱 `docs/` 內的詳細文件。
 
 ## 專案定位
@@ -69,10 +74,10 @@ npm run lint
 
 - 已有基本旅程載入、行程、清單、共同支出、附件同步、Excel 匯出等功能。
 - `Expense` 模組已拆出 components / hooks / utils / storage / types。
-- V3-1 正在處理 `Other Info` / Reference 類功能的資料與架構基礎。
+- V3-1 正在處理 `Other Info` / Reference 類功能的本機資料管理與架構基礎。
 - V3-1 已定義 `Folder` 應為通用 Tree 結構，不再用 `FolderType` 或 `category` 硬編碼分類。
 - `OtherInfoService` 是 UI 取得 Folder / Item 的入口，UI 不應直接依賴 constants 或 storage 細節。
-- `OtherInfoPage` 目前仍是初版 UI，後續要接上 folder tree、item list、navigation 與 CRUD。
+- `OtherInfoPage` 目前已有簡易管理 UI，可新增、編輯、刪除資料；目前只寫入 localStorage，不同步雲端。
 
 ## 目前目錄結構重點
 
@@ -161,7 +166,9 @@ UI
 
 - 讓 `OtherInfoPage` 只透過 service 取得資料。
 - 將預設 folder、trip seed data、local user data 的合併邏輯放在 service/repository 層。
-- 後續補上 folder tree、item list、detail、create/edit/delete、permission。
+- Seed data 保留為預設資料；編輯 seed item 時以 localStorage 覆蓋，刪除 seed item 時以 `isDeleted` 標記覆蓋。
+- Other Info 內容中的 `http` / `https` URL 應自動轉成可點擊超連結，並以新分頁開啟。
+- 後續補上完整 folder tree、navigation、permission、sync / cloud persistence。
 
 ## Coding Style
 
@@ -230,4 +237,3 @@ AI agent 負責：
 - 是否處理空資料、未登入、無權限、loading/error 狀態？
 - 是否已執行 build，並回報結果？
 - 若未執行測試或 lint，是否明確說明原因？
-

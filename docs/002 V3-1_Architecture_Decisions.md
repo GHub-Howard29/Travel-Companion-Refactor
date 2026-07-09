@@ -52,7 +52,7 @@ Folder 採用純 Tree 架構。
 
 V3-1 第一階段：
 
-採只讀 Reference 工具。
+採 Reference 簡易本機管理工具。
 
 已落地：
 
@@ -60,15 +60,19 @@ V3-1 第一階段：
 - 主畫面顯示 Reference / 旅行資訊
 - 第一層固定分類以 folder chips 呈現
 - Chips 自動換行
-- 顯示資料筆數、空狀態與唯讀 item card
+- 顯示資料筆數、空狀態與 item card
+- 可新增、編輯、刪除 Other Info item
+- 內容中的 `http` / `https` URL 自動轉為可點擊超連結
+- 超連結以新分頁開啟
 - `text` 類型維持原本文字頁
 - 僅 `otherInfo` 類型進入 OtherInfoPage
 
-V3-1 第一階段不提供：
+V3-1 第一階段尚不提供：
 
-- APP 新增
-- APP 編輯
-- APP 刪除
+- 雲端同步
+- 多人協作
+- 權限過濾
+- 完整 folder tree navigation
 
 後續完整模式：
 
@@ -155,9 +159,9 @@ other-info-flights
 
 定位為：
 
-管理者預先整理資料。
+seed data 預設資料 + localStorage 本機覆寫資料。
 
-修改流程：
+seed data 維護流程：
 
 修改資料
 
@@ -173,11 +177,31 @@ Deploy
 
 使用者查看
 
-不提供：
+APP 內簡易管理流程：
 
-- APP 編輯
-- APP 新增
-- APP 刪除
+新增 item
+
+↓
+
+寫入 localStorage
+
+編輯 seed item
+
+↓
+
+以 localStorage item 覆蓋相同 id 的 seed item
+
+刪除 seed item
+
+↓
+
+寫入 `isDeleted` 標記
+
+目前不提供：
+
+- 雲端同步
+- Pending Queue
+- Conflict Resolution
 
 ---
 

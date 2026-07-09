@@ -71,9 +71,10 @@
 目前已完成：
 
 - 產品架構設計
-- V3-1 Other Info / Reference 只讀工具第一階段
+- V3-1 Other Info / Reference localStorage 簡易管理第一階段
 - 自由行 / 跟團 Reference seed data first pass
 - 「其他資訊」已接入 trip sidebarConfig 與 App 工具切換
+- Other Info 已支援新增、編輯、刪除與 URL 超連結顯示
 
 目前開始：
 
@@ -135,10 +136,15 @@ Checklist Module
 
 Reference Module
 
-- [x] OtherInfoPage 只讀 UI
+- [x] OtherInfoPage 簡易管理 UI
 - [x] Folder chips 自動換行
 - [x] seed data + stored data 合併讀取
-- [x] 不提供 APP 內新增 / 編輯 / 刪除
+- [x] 新增 item 寫入 localStorage
+- [x] 編輯 seed item 以 localStorage 覆蓋
+- [x] 刪除 seed item 寫入 `isDeleted` 標記
+- [x] `http` / `https` URL 自動轉為可點擊超連結
+- [ ] 雲端同步
+- [ ] 權限過濾
 
 ---
 

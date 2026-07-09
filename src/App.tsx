@@ -408,6 +408,7 @@ export default function App() {
               ?.type === "otherInfo" && (
               <OtherInfoPage
                 tripId={selectedTripId}
+                canEdit={hasEditPermission}
               />
             )}
 

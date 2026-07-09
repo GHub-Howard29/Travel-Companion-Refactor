@@ -1,13 +1,13 @@
 /**
  * Other Info Type（其他資訊內容型別）
  *
- * 定義「其他資訊」功能的唯讀內容資料。
+ * 定義「其他資訊」功能的內容資料。
  *
  * Folder 負責分類與分層。
  * OtherInfoItem 負責實際顯示內容。
  *
- * 本功能目前定位為管理者預先整理資料後發布，
- * 不提供一般使用者於 APP 內新增、編輯或刪除。
+ * seed data 作為預設資料，APP 內新增 / 編輯 / 刪除
+ * 目前以 localStorage 作為本機覆寫層。
  *
  * allowedRoles 先作為未來權限控管的擴充欄位，
  * V3-1 先不實作 Role 過濾邏輯。
@@ -50,4 +50,7 @@ export interface OtherInfoItem {
 
   /** 更新時間 */
   updatedAt: string;
+
+  /** 本機刪除標記，用於覆蓋 seed data */
+  isDeleted?: boolean;
 }
