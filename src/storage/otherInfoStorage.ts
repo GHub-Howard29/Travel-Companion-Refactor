@@ -8,29 +8,14 @@
  * 可再集中調整此檔案。
  */
 
-// ================================
-// Import
-// ================================
 
 import type { OtherInfoItem } from "../types";
 
-// ================================
-// Constants
-// ================================
-
 const OTHER_INFO_STORAGE_PREFIX = "travel_companion_other_info";
-
-// ================================
-// Private Functions
-// ================================
 
 const getOtherInfoStorageKey = (tripId: string): string => {
   return `${OTHER_INFO_STORAGE_PREFIX}_${tripId}`;
 };
-
-// ================================
-// Public Functions
-// ================================
 
 /**
  * 讀取指定 Trip 的其他資訊內容

@@ -42,6 +42,34 @@ export const createFolder = (
 };
 
 /**
+ * 建立指定 ID 的 Folder
+ *
+ * 用於管理者預先維護的唯讀資料。
+ * 這類資料需要穩定 ID，避免重新 Build 後內容對應失效。
+ */
+export const createFolderWithId = (
+  id: string,
+  tripId: string,
+  parentId: string | null,
+  title: string,
+  order = 0,
+  isSystem = false,
+): Folder => {
+  const now = new Date().toISOString();
+
+  return {
+    id,
+    tripId,
+    parentId,
+    title,
+    order,
+    isSystem,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+/**
  * 更新 Folder 時間
  */
 export const updateFolderTimestamp = (folder: Folder): Folder => ({
