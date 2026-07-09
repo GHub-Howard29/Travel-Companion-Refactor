@@ -1,11 +1,10 @@
 /**
  * Other Info Utils（其他資訊工具函式）
  *
- * 負責處理「其他資訊」唯讀內容的常用查詢與排序。
+ * 負責處理「其他資訊」內容的常用查詢與排序。
  *
- * V3-1 只做資料展示輔助，
- * 不處理 APP 內新增、編輯、刪除，
- * 也暫不執行 Role 權限過濾。
+ * V3-1 的新增、編輯、刪除由 service/storage 處理，
+ * utils 僅保留 pure helper，不執行 Role 權限過濾。
  */
 
 // ================================
@@ -13,6 +12,24 @@
 // ================================
 
 import type { OtherInfoItem } from "../types";
+
+// ================================
+// Types
+// ================================
+
+export interface OtherInfoContentSegment {
+  type: "text" | "link";
+  text: string;
+}
+
+export type OtherInfoContentLine = OtherInfoContentSegment[];
+
+// ================================
+// Constants
+// ================================
+
+const HTTP_URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+const EXACT_HTTP_URL_PATTERN = /^https?:\/\/[^\s]+$/;
 
 // ================================
 // Public Functions
@@ -45,4 +62,21 @@ export const hasOtherInfoItems = (
   folderId: string,
 ): boolean => {
   return items.some((item) => item.folderId === folderId);
+};
+
+/**
+ * 將其他資訊內容切成文字與 URL 片段，供 UI render 成可點擊連結
+ */
+export const parseOtherInfoContentLinks = (
+  content: string,
+): OtherInfoContentLine[] => {
+  return content.split("\n").map((line) =>
+    line
+      .split(HTTP_URL_PATTERN)
+      .filter((part) => part.length > 0)
+      .map((part) => ({
+        type: EXACT_HTTP_URL_PATTERN.test(part) ? "link" : "text",
+        text: part,
+      })),
+  );
 };

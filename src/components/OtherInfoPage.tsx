@@ -17,51 +17,41 @@ import {
   getItems,
   updateOtherInfoItem,
 } from "../services/otherInfoService";
-import { getOtherInfoItemsByFolderId } from "../utils/otherInfoUtils";
+import {
+  getOtherInfoItemsByFolderId,
+  parseOtherInfoContentLinks,
+} from "../utils/otherInfoUtils";
+import { useOtherInfoForm } from "../hooks/useOtherInfoForm";
 
 interface OtherInfoPageProps {
   tripId: string;
   canEdit: boolean;
 }
 
-interface OtherInfoFormState {
-  folderId: string;
-  title: string;
-  content: string;
-}
-
-const createEmptyForm = (folderId: string): OtherInfoFormState => ({
-  folderId,
-  title: "",
-  content: "",
-});
-
-const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
-
 const renderContentWithLinks = (content: string) => {
-  return content.split("\n").map((line, lineIndex) => {
-    const parts = line.split(URL_PATTERN);
+  const lines = parseOtherInfoContentLinks(content);
 
+  return lines.map((line, lineIndex) => {
     return (
-      <span key={`${line}-${lineIndex}`}>
-        {parts.map((part, partIndex) => {
-          if (!part.match(URL_PATTERN)) {
-            return part;
+      <span key={`${lineIndex}-${line.map((part) => part.text).join("")}`}>
+        {line.map((part, partIndex) => {
+          if (part.type === "text") {
+            return part.text;
           }
 
           return (
             <a
-              key={`${part}-${partIndex}`}
-              href={part}
+              key={`${part.text}-${partIndex}`}
+              href={part.text}
               target="_blank"
               rel="noreferrer"
               className="break-all font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
             >
-              {part}
+              {part.text}
             </a>
           );
         })}
-        {lineIndex < content.split("\n").length - 1 && <br />}
+        {lineIndex < lines.length - 1 && <br />}
       </span>
     );
   });
@@ -71,11 +61,18 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
   const folders = useMemo<Folder[]>(() => getFolders(tripId), [tripId]);
   const [items, setItems] = useState<OtherInfoItem[]>(() => getItems(tripId));
   const [activeFolderId, setActiveFolderId] = useState(() => folders[0]?.id ?? "");
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [form, setForm] = useState<OtherInfoFormState>(() =>
-    createEmptyForm(folders[0]?.id ?? ""),
-  );
+  const {
+    editingItemId,
+    form,
+    isFormOpen,
+    isSaveDisabled,
+    closeForm,
+    openCreateForm,
+    openEditForm,
+    resetForm,
+    syncFolderWhenNotEditing,
+    updateForm,
+  } = useOtherInfoForm(folders[0]?.id ?? "");
 
   const activeFolder = folders.find((folder) => folder.id === activeFolderId);
   const activeItems = useMemo(
@@ -84,34 +81,12 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
   );
 
   useEffect(() => {
+    const firstFolderId = folders[0]?.id ?? "";
+
     setItems(getItems(tripId));
-    setActiveFolderId(folders[0]?.id ?? "");
-    setEditingItemId(null);
-    setIsFormOpen(false);
-    setForm(createEmptyForm(folders[0]?.id ?? ""));
-  }, [folders, tripId]);
-
-  const openCreateForm = () => {
-    setEditingItemId(null);
-    setForm(createEmptyForm(activeFolderId));
-    setIsFormOpen(true);
-  };
-
-  const openEditForm = (item: OtherInfoItem) => {
-    setEditingItemId(item.id);
-    setForm({
-      folderId: item.folderId,
-      title: item.title,
-      content: item.content,
-    });
-    setIsFormOpen(true);
-  };
-
-  const closeForm = () => {
-    setEditingItemId(null);
-    setIsFormOpen(false);
-    setForm(createEmptyForm(activeFolderId));
-  };
+    setActiveFolderId(firstFolderId);
+    resetForm(firstFolderId);
+  }, [folders, resetForm, tripId]);
 
   const handleSave = () => {
     const title = form.title.trim();
@@ -131,14 +106,14 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
 
     setItems(nextItems);
     setActiveFolderId(form.folderId);
-    closeForm();
+    closeForm(form.folderId);
   };
 
   const handleDelete = (item: OtherInfoItem) => {
     setItems(deleteOtherInfoItem(tripId, item.id));
 
     if (editingItemId === item.id) {
-      closeForm();
+      closeForm(activeFolderId);
     }
   };
 
@@ -155,7 +130,7 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
         {canEdit && (
           <button
             type="button"
-            onClick={openCreateForm}
+            onClick={() => openCreateForm(activeFolderId)}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-stone-900 text-white shadow-sm transition-colors hover:bg-stone-700"
             aria-label="新增資訊"
             title="新增資訊"
@@ -176,12 +151,7 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
               type="button"
               onClick={() => {
                 setActiveFolderId(folder.id);
-                if (!editingItemId) {
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    folderId: folder.id,
-                  }));
-                }
+                syncFolderWhenNotEditing(folder.id);
               }}
               className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${
                 isActive
@@ -211,7 +181,7 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
             </h3>
             <button
               type="button"
-              onClick={closeForm}
+              onClick={() => closeForm(activeFolderId)}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
               aria-label="關閉"
               title="關閉"
@@ -224,10 +194,9 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
             <select
               value={form.folderId}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
+                updateForm({
                   folderId: event.target.value,
-                }))
+                })
               }
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-stone-500"
             >
@@ -241,10 +210,9 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
             <input
               value={form.title}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
+                updateForm({
                   title: event.target.value,
-                }))
+                })
               }
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-stone-500"
               placeholder="標題"
@@ -253,10 +221,9 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
             <textarea
               value={form.content}
               onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
+                updateForm({
                   content: event.target.value,
-                }))
+                })
               }
               className="min-h-32 w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-relaxed text-slate-700 outline-none focus:border-stone-500"
               placeholder="內容"
@@ -265,7 +232,7 @@ export const OtherInfoPage = ({ tripId, canEdit }: OtherInfoPageProps) => {
             <button
               type="button"
               onClick={handleSave}
-              disabled={!form.title.trim() || !form.content.trim()}
+              disabled={isSaveDisabled}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <Save size={16} />

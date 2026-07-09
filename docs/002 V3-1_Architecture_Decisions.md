@@ -233,7 +233,55 @@ Role 判斷。
 
 ---
 
-# 七、UI 原則
+# 七、Checklist 第一階段
+
+Checklist Module 第一階段採：
+
+Trip-scoped local persistence。
+
+已落地：
+
+- `ChecklistPage` 負責 checklist UI
+- `useChecklistState` 負責 UI state adapter
+- `checklistService` 負責 progress payload 與資料操作
+- `checklistStorage` 負責 localStorage 讀寫與 runtime validation
+- `checklist.ts` 定義 `ChecklistProgress`
+
+資料流：
+
+```text
+ChecklistPage
+↓
+useChecklistState
+↓
+checklistService
+↓
+checklistStorage
+↓
+localStorage
+```
+
+目前資料：
+
+- Trip JSON 的 `checklistData` 仍作為共同檢查清單 seed
+- 勾選狀態依 `tripId` 寫入 localStorage
+- F5 後保留勾選狀態
+- 不同 Trip 各自保留勾選狀態
+- 進度計算忽略已不存在的 checked item id
+
+V3-1 第一階段尚不提供：
+
+- Public Checklist / Private Checklist 拆分
+- APP 內新增 checklist item
+- APP 內編輯 checklist item
+- APP 內刪除 checklist item
+- 雲端同步
+- Pending Queue
+- 權限過濾
+
+---
+
+# 八、UI 原則
 
 第一層：
 
@@ -259,7 +307,7 @@ Role 判斷。
 
 ---
 
-# 八、維護原則
+# 九、維護原則
 
 本專案主要供：
 
@@ -289,7 +337,7 @@ otherInfoData
 
 ---
 
-# 九、文件更新提醒（V3-1 完成後）
+# 十、文件更新提醒（V3-1 完成後）
 
 完成 V3-1 時，需同步更新：
 

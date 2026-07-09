@@ -43,6 +43,18 @@ import {
 } from "../storage/otherInfoStorage";
 
 // ================================
+// Private Helpers
+// ================================
+
+const normalizeEditableText = (value: string): string => {
+  return value.trim();
+};
+
+const getStoredItemsForTrip = (tripId: string): OtherInfoItem[] => {
+  return readStoredOtherInfoItems(tripId).filter((item) => item.tripId === tripId);
+};
+
+// ================================
 // Public Functions
 // ================================
 
@@ -92,7 +104,7 @@ export const getItems = (
   tripId: string,
 ): OtherInfoItem[] => {
   const seedItems = OTHER_INFO_DATA_BY_TRIP_ID[tripId]?.items ?? [];
-  const storedItems = readStoredOtherInfoItems(tripId);
+  const storedItems = getStoredItemsForTrip(tripId);
   const mergedItemsById = new Map<string, OtherInfoItem>();
 
   seedItems.forEach((item) => {
@@ -114,8 +126,15 @@ export const createOtherInfoItem = (
   title: string,
   content: string,
 ): OtherInfoItem[] => {
+  const normalizedTitle = normalizeEditableText(title);
+  const normalizedContent = normalizeEditableText(content);
+
+  if (!normalizedTitle || !normalizedContent) {
+    return getItems(tripId);
+  }
+
   const now = new Date().toISOString();
-  const storedItems = readStoredOtherInfoItems(tripId);
+  const storedItems = getStoredItemsForTrip(tripId);
   const nextOrder =
     getItems(tripId).filter((item) => item.folderId === folderId).length + 1;
 
@@ -125,8 +144,8 @@ export const createOtherInfoItem = (
       id: crypto.randomUUID(),
       tripId,
       folderId,
-      title,
-      content,
+      title: normalizedTitle,
+      content: normalizedContent,
       order: nextOrder,
       createdAt: now,
       updatedAt: now,
@@ -141,16 +160,25 @@ export const updateOtherInfoItem = (
   itemId: string,
   patch: Pick<OtherInfoItem, "folderId" | "title" | "content">,
 ): OtherInfoItem[] => {
+  const normalizedTitle = normalizeEditableText(patch.title);
+  const normalizedContent = normalizeEditableText(patch.content);
+
+  if (!normalizedTitle || !normalizedContent) {
+    return getItems(tripId);
+  }
+
   const currentItem = getItems(tripId).find((item) => item.id === itemId);
 
   if (!currentItem) {
     return getItems(tripId);
   }
 
-  const storedItems = readStoredOtherInfoItems(tripId);
+  const storedItems = getStoredItemsForTrip(tripId);
   const nextItem: OtherInfoItem = {
     ...currentItem,
     ...patch,
+    title: normalizedTitle,
+    content: normalizedContent,
     updatedAt: new Date().toISOString(),
   };
   const hasStoredItem = storedItems.some((item) => item.id === itemId);
@@ -173,7 +201,7 @@ export const deleteOtherInfoItem = (
     return getItems(tripId);
   }
 
-  const storedItems = readStoredOtherInfoItems(tripId);
+  const storedItems = getStoredItemsForTrip(tripId);
   const deleteMarker: OtherInfoItem = {
     ...currentItem,
     isDeleted: true,

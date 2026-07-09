@@ -13,6 +13,34 @@ import type { OtherInfoItem } from "../types";
 
 const OTHER_INFO_STORAGE_PREFIX = "travel_companion_other_info";
 
+const isString = (value: unknown): value is string => {
+  return typeof value === "string";
+};
+
+const isNumber = (value: unknown): value is number => {
+  return typeof value === "number" && Number.isFinite(value);
+};
+
+const isStoredOtherInfoItem = (value: unknown): value is OtherInfoItem => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const item = value as Partial<OtherInfoItem>;
+
+  return (
+    isString(item.id) &&
+    isString(item.tripId) &&
+    isString(item.folderId) &&
+    isString(item.title) &&
+    isString(item.content) &&
+    isNumber(item.order) &&
+    isString(item.createdAt) &&
+    isString(item.updatedAt) &&
+    (item.isDeleted === undefined || typeof item.isDeleted === "boolean")
+  );
+};
+
 const getOtherInfoStorageKey = (tripId: string): string => {
   return `${OTHER_INFO_STORAGE_PREFIX}_${tripId}`;
 };
@@ -36,7 +64,7 @@ export const readStoredOtherInfoItems = (
       return [];
     }
 
-    return parsedData as OtherInfoItem[];
+    return parsedData.filter(isStoredOtherInfoItem);
   } catch {
     return [];
   }

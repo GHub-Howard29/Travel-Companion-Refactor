@@ -75,6 +75,7 @@ npm run lint
 - 已有基本旅程載入、行程、清單、共同支出、附件同步、Excel 匯出等功能。
 - `Expense` 模組已拆出 components / hooks / utils / storage / types。
 - V3-1 正在處理 `Other Info` / Reference 類功能的本機資料管理與架構基礎。
+- Checklist Module 已完成第一階段拆分，勾選狀態使用 Trip-scoped localStorage persistence。
 - V3-1 已定義 `Folder` 應為通用 Tree 結構，不再用 `FolderType` 或 `category` 硬編碼分類。
 - `OtherInfoService` 是 UI 取得 Folder / Item 的入口，UI 不應直接依賴 constants 或 storage 細節。
 - `OtherInfoPage` 目前已有簡易管理 UI，可新增、編輯、刪除資料；目前只寫入 localStorage，不同步雲端。
@@ -169,6 +170,31 @@ UI
 - Seed data 保留為預設資料；編輯 seed item 時以 localStorage 覆蓋，刪除 seed item 時以 `isDeleted` 標記覆蓋。
 - Other Info 內容中的 `http` / `https` URL 應自動轉成可點擊超連結，並以新分頁開啟。
 - 後續補上完整 folder tree、navigation、permission、sync / cloud persistence。
+
+## V3-1 Checklist 決策
+
+`Checklist` 目前相關檔案：
+
+- `src/types/checklist.ts`
+- `src/storage/checklistStorage.ts`
+- `src/services/checklistService.ts`
+- `src/hooks/useChecklistState.ts`
+- `src/components/ChecklistPage.tsx`
+
+目前狀態：
+
+- Trip JSON 的 `checklistData` 作為共同檢查清單 seed。
+- 勾選狀態依 `tripId` 寫入 localStorage，F5 後不會清空。
+- 自由行 / 跟團各自保留勾選狀態。
+- `App.tsx` 不再直接持有 checklist checked state。
+- 資料流為 `ChecklistPage -> useChecklistState -> checklistService -> checklistStorage -> localStorage`。
+- 進度計算會忽略已不存在的 checked item id。
+
+後續方向：
+
+- 規劃 Public Checklist / Private Checklist。
+- 評估 APP 內新增 / 編輯 / 刪除 checklist item。
+- 評估 cloud sync、pending queue 與權限過濾。
 
 ## Coding Style
 

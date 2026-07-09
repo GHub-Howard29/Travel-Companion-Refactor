@@ -7,6 +7,7 @@
 # 目前開發狀態
 
 V3-1 已完成底層架構建立，並已完成 Other Info / Reference 簡易本機管理工具第一階段串接。
+Checklist Module 也已完成第一階段拆分與 Trip-scoped local persistence。
 
 目前已完成：
 
@@ -28,6 +29,38 @@ V3-1 已完成底層架構建立，並已完成 Other Info / Reference 簡易本
 - 不使用 FolderType
 - 不使用 category
 - 以 parentId 建立 Tree
+
+---
+
+## Checklist
+
+已完成：
+
+- checklist.ts
+- checklistStorage.ts
+- checklistService.ts
+- useChecklistState.ts
+- ChecklistPage.tsx
+- App.tsx checklist UI 抽出
+
+目前：
+
+- 「共同檢查清單」勾選狀態已依 tripId 寫入 localStorage
+- F5 後可保留已勾選項目
+- 自由行 / 跟團各自保留勾選狀態
+- App.tsx 不再直接持有 checkedItems state
+- ChecklistPage 自行管理分類、進度、空狀態與 item toggle
+- Hook 只透過 checklistService 取得 / 更新資料
+- checklistService 統一處理 progress payload
+- checklistStorage 負責 localStorage 讀寫與 runtime validation
+- 進度計算會忽略已不存在的 item id
+
+尚未完成：
+
+- Public Checklist / Private Checklist 拆分
+- App 內新增 / 編輯 / 刪除 checklist item
+- 雲端同步
+- 權限過濾
 
 ---
 
@@ -87,6 +120,7 @@ src/types/
 
 - folder.ts
 - otherInfo.ts
+- checklist.ts
 
 src/storage/
 
@@ -94,6 +128,7 @@ src/storage/
 - folderRepository.ts
 - otherInfoStorage.ts
 - otherInfoRepository.ts
+- checklistStorage.ts
 
 src/utils/
 
@@ -104,6 +139,17 @@ src/utils/
 src/services/
 
 - otherInfoService.ts
+- checklistService.ts
+
+src/hooks/
+
+- useChecklistState.ts
+- useOtherInfoForm.ts
+
+src/components/
+
+- ChecklistPage.tsx
+- OtherInfoPage.tsx
 
 src/constants/
 
@@ -136,7 +182,13 @@ npm.cmd run build
    - `http` / `https` URL 是否可點擊並開新分頁
    - 原本文字頁是否仍維持 Text Page 呈現
 
-2. 若 UI / 資料 OK，下一個功能建議進入 Checklist Module 重構：
-   - 將「共同檢查清單」從目前單一 checkedItems state 拆出
-   - 建立 Trip-scoped checklist tool
-   - 為 Public Checklist / Private Checklist 與 local persistence 預留架構
+2. 瀏覽器手測 Checklist：
+   - 勾選項目後 F5 是否保留
+   - 自由行 / 跟團切換後是否各自保留
+   - 勾選進度是否正確
+   - 若 trip seed item 變動，已不存在的 checked id 是否不影響進度
+
+3. 下一步建議：
+   - 規劃 Public Checklist / Private Checklist 資料模型
+   - 再決定是否提供 APP 內新增 / 編輯 / 刪除 checklist item
+   - 評估 Checklist 是否需要 cloud sync / pending queue

@@ -1,8 +1,8 @@
 // React 核心
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 // Icon 圖示
-import { Check, MapPin, ExternalLink } from "lucide-react";
+import { MapPin, ExternalLink } from "lucide-react";
 
 // Supabase 雲端資料庫
 import { createClient } from "@supabase/supabase-js";
@@ -17,6 +17,7 @@ import { handleNavigate } from "./utils/navigationUtils";
 import AppSidebar from "./components/layout/AppSidebar";
 import AppHeader from "./components/layout/AppHeader";
 import ExpenseScreen from "./components/expense/ExpenseScreen";
+import { ChecklistPage } from "./components/ChecklistPage";
 import { OtherInfoPage } from "./components/OtherInfoPage";
 import useExpenseBook from "./hooks/useExpenseBook";
 import useTripWorkspace from "./hooks/useTripWorkspace";
@@ -27,9 +28,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function App() {
-  // 1. 雲端與離線資料緩衝狀態
-  const [checkedItems, setCheckedItems] = useState<string[]>([]);
-
   const {
     userEmail,
     setUserEmail,
@@ -153,15 +151,6 @@ export default function App() {
     applyTripDefaults(selectedTripMeta);
   }, [selectedTripMeta]);
 
-  // 打包清單事件 (完全保留)
-  const toggleChecklistItem = (id: string) => {
-    if (checkedItems.includes(id)) {
-      setCheckedItems(checkedItems.filter((item) => item !== id));
-      return;
-    }
-    setCheckedItems([...checkedItems, id]);
-  };
-
   const handleScreenSelect = (item: TripDetail["sidebarConfig"][number]) => {
     if (item.type === "expense" && !userEmail) {
       alert("此功能須先登入");
@@ -178,9 +167,6 @@ export default function App() {
   const currentDayEvents =
     currentTrip?.content?.daysData?.[String(activeDay)] || [];
   const checklistData = currentTrip?.content?.checklistData || [];
-  const categories = Array.from(
-    new Set(checklistData.map((item) => item.category)),
-  );
 
   const getHeaderBgColor = () => {
     const activeConfig = currentTrip?.sidebarConfig.find(
@@ -321,69 +307,10 @@ export default function App() {
             {/* 2. 行李清單檢查模組 */}
             {currentTrip?.sidebarConfig.find((s) => s.id === currentScreen)
               ?.type === "checklist" && (
-              <div className="space-y-6">
-                {checklistData.length > 0 ? (
-                  <>
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-                      <div className="flex justify-between items-center mb-2 text-sm font-bold text-slate-700">
-                        <span>準備進度</span>
-                        <span className="text-rose-700">
-                          {Math.round(
-                            (checkedItems.length / checklistData.length) * 100,
-                          )}
-                          % ({checkedItems.length}/{checklistData.length})
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-rose-600 h-full transition-all duration-500 ease-out"
-                          style={{
-                            width: `${(checkedItems.length / checklistData.length) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {categories.map((category) => (
-                      <div key={category} className="space-y-2">
-                        <h3 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider pl-1">
-                          {category}
-                        </h3>
-                        <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden divide-y divide-slate-100">
-                          {checklistData
-                            .filter((item) => item.category === category)
-                            .map((item) => {
-                              const isChecked = checkedItems.includes(item.id);
-                              return (
-                                <div
-                                  key={item.id}
-                                  onClick={() => toggleChecklistItem(item.id)}
-                                  className="flex items-center gap-3 p-4 hover:bg-slate-50/80 cursor-pointer transition-colors select-none"
-                                >
-                                  <div
-                                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${isChecked ? "bg-rose-600 border-rose-600 text-white shadow-sm scale-105" : "border-slate-300 bg-white"}`}
-                                  >
-                                    {isChecked && (
-                                      <Check size={14} strokeWidth={3} />
-                                    )}
-                                  </div>
-                                  <span
-                                    className={`text-sm font-medium transition-all ${isChecked ? "text-slate-400 line-through" : "text-slate-700"}`}
-                                  >
-                                    {item.label}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="text-center py-12 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl shadow-sm">
-                    此行程尚未配置檢查清單。
-                  </div>
-                )}
-              </div>
+              <ChecklistPage
+                tripId={selectedTripId}
+                checklistData={checklistData}
+              />
             )}
 
             {/* 3. 純文字/備忘錄模組 */}

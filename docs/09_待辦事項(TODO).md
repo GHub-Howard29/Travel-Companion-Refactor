@@ -75,6 +75,8 @@
 - 自由行 / 跟團 Reference seed data first pass
 - 「其他資訊」已接入 trip sidebarConfig 與 App 工具切換
 - Other Info 已支援新增、編輯、刪除與 URL 超連結顯示
+- Checklist Module 已完成第一階段拆分
+- Checklist 勾選狀態已支援 Trip-scoped localStorage persistence
 
 目前開始：
 
@@ -118,15 +120,27 @@ Expense Module
 
 ## 第四階段
 
-開始整理：
+已完成第一階段：
 
 Checklist Module
 
-建議下一步：
+- [x] 將「共同檢查清單」從 App.tsx 單一 checkedItems state 拆出
+- [x] 建立 ChecklistPage
+- [x] 建立 useChecklistState
+- [x] 建立 checklistService
+- [x] 建立 checklistStorage
+- [x] 建立 checklist.ts
+- [x] 勾選狀態依 tripId 保存於 localStorage
+- [x] F5 後保留勾選狀態
+- [x] 自由行 / 跟團各自保留勾選狀態
+- [x] 進度計算忽略已不存在的 checked item id
 
-- [ ] 將「共同檢查清單」拆成 Trip-scoped checklist tool
+後續：
+
 - [ ] 規劃 Public Checklist / Private Checklist
-- [ ] 補上 local persistence 邊界
+- [ ] 評估 APP 內新增 / 編輯 / 刪除 checklist item
+- [ ] 評估 cloud sync / pending queue
+- [ ] 補上權限過濾
 
 ---
 
