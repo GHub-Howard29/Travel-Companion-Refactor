@@ -70,11 +70,14 @@
 
 目前已完成：
 
-產品架構設計。
+- 產品架構設計
+- V3-1 Other Info / Reference 只讀工具第一階段
+- 自由行 / 跟團 Reference seed data first pass
+- 「其他資訊」已接入 trip sidebarConfig 與 App 工具切換
 
 目前開始：
 
-Foundation 實作。
+Travel Tool 模組化落地。
 
 ---
 
@@ -118,13 +121,24 @@ Expense Module
 
 Checklist Module
 
+建議下一步：
+
+- [ ] 將「共同檢查清單」拆成 Trip-scoped checklist tool
+- [ ] 規劃 Public Checklist / Private Checklist
+- [ ] 補上 local persistence 邊界
+
 ---
 
 ## 第五階段
 
-開始整理：
+已完成第一階段：
 
 Reference Module
+
+- [x] OtherInfoPage 只讀 UI
+- [x] Folder chips 自動換行
+- [x] seed data + stored data 合併讀取
+- [x] 不提供 APP 內新增 / 編輯 / 刪除
 
 ---
 

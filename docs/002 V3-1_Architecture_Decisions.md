@@ -50,6 +50,28 @@ Folder 採用純 Tree 架構。
 
 # 三、其他資訊呈現方式
 
+V3-1 第一階段：
+
+採只讀 Reference 工具。
+
+已落地：
+
+- 左側工具列顯示「其他資訊」
+- 主畫面顯示 Reference / 旅行資訊
+- 第一層固定分類以 folder chips 呈現
+- Chips 自動換行
+- 顯示資料筆數、空狀態與唯讀 item card
+- `text` 類型維持原本文字頁
+- 僅 `otherInfo` 類型進入 OtherInfoPage
+
+V3-1 第一階段不提供：
+
+- APP 新增
+- APP 編輯
+- APP 刪除
+
+後續完整模式：
+
 第一層：
 
 固定分類卡片。

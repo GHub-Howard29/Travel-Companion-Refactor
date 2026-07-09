@@ -17,6 +17,7 @@ import { handleNavigate } from "./utils/navigationUtils";
 import AppSidebar from "./components/layout/AppSidebar";
 import AppHeader from "./components/layout/AppHeader";
 import ExpenseScreen from "./components/expense/ExpenseScreen";
+import { OtherInfoPage } from "./components/OtherInfoPage";
 import useExpenseBook from "./hooks/useExpenseBook";
 import useTripWorkspace from "./hooks/useTripWorkspace";
 
@@ -192,6 +193,8 @@ export default function App() {
       case "expense":
         return "bg-amber-600";
       case "text":
+        return "bg-stone-700";
+      case "otherInfo":
         return "bg-stone-700";
       default:
         return "bg-emerald-700";
@@ -400,7 +403,15 @@ export default function App() {
               </div>
             )}
 
-            {/* 4. 智慧多幣別記帳模組 */}
+            {/* 4. 其他資訊模組 */}
+            {currentTrip?.sidebarConfig.find((s) => s.id === currentScreen)
+              ?.type === "otherInfo" && (
+              <OtherInfoPage
+                tripId={selectedTripId}
+              />
+            )}
+
+            {/* 5. 智慧多幣別記帳模組 */}
             {currentTrip?.sidebarConfig.find((s) => s.id === currentScreen)
               ?.type === "expense" && (
               <ExpenseScreen

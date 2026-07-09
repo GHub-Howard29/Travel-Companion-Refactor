@@ -18,11 +18,28 @@ import type { Folder, OtherInfoItem } from "../types";
 
 import {
   createDefaultFoldersForTrip,
+  ensureDefaultFoldersForTrip,
 } from "../utils/folderDefaults";
+
+import {
+  sortFoldersByOrder,
+} from "../utils/folderUtils";
+
+import {
+  sortOtherInfoItemsByOrder,
+} from "../utils/otherInfoUtils";
 
 import {
   OTHER_INFO_DATA_BY_TRIP_ID,
 } from "../constants/otherInfoData";
+
+import {
+  getFoldersByTripId,
+} from "../storage/folderRepository";
+
+import {
+  readStoredOtherInfoItems,
+} from "../storage/otherInfoStorage";
 
 // ================================
 // Public Functions
@@ -43,7 +60,28 @@ export const getDefaultFolders = (
 export const getFolders = (
   tripId: string,
 ): Folder[] => {
-  return OTHER_INFO_DATA_BY_TRIP_ID[tripId]?.folders ?? [];
+  const seedFolders = OTHER_INFO_DATA_BY_TRIP_ID[tripId]?.folders ?? [];
+  const storedFolders = getFoldersByTripId(tripId);
+  const mergedFoldersById = new Map<string, Folder>();
+
+  createDefaultFoldersForTrip(tripId).forEach((folder) => {
+    mergedFoldersById.set(folder.id, folder);
+  });
+
+  seedFolders.forEach((folder) => {
+    mergedFoldersById.set(folder.id, folder);
+  });
+
+  storedFolders.forEach((folder) => {
+    mergedFoldersById.set(folder.id, folder);
+  });
+
+  const folders = ensureDefaultFoldersForTrip(
+    tripId,
+    Array.from(mergedFoldersById.values()),
+  );
+
+  return sortFoldersByOrder(folders);
 };
 
 /**
@@ -52,5 +90,17 @@ export const getFolders = (
 export const getItems = (
   tripId: string,
 ): OtherInfoItem[] => {
-  return OTHER_INFO_DATA_BY_TRIP_ID[tripId]?.items ?? [];
+  const seedItems = OTHER_INFO_DATA_BY_TRIP_ID[tripId]?.items ?? [];
+  const storedItems = readStoredOtherInfoItems(tripId);
+  const mergedItemsById = new Map<string, OtherInfoItem>();
+
+  seedItems.forEach((item) => {
+    mergedItemsById.set(item.id, item);
+  });
+
+  storedItems.forEach((item) => {
+    mergedItemsById.set(item.id, item);
+  });
+
+  return sortOtherInfoItemsByOrder(Array.from(mergedItemsById.values()));
 };

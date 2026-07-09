@@ -6,7 +6,7 @@
 
 # 目前開發狀態
 
-V3-1 已完成底層架構建立，尚未開始正式串接 UI。
+V3-1 已完成底層架構建立，並已完成 Other Info / Reference 只讀工具第一階段串接。
 
 目前已完成：
 
@@ -40,11 +40,19 @@ V3-1 已完成底層架構建立，尚未開始正式串接 UI。
 - otherInfoStorage.ts
 - otherInfoRepository.ts
 - otherInfoService.ts
-- otherInfoData.ts（空資料來源）
+- otherInfoData.ts（第一批 seed data）
+- OtherInfoPage 只讀 UI
+- App.tsx otherInfo 類型串接
+- AppSidebar.tsx otherInfo icon mapping
+- Trip sidebarConfig 新增「其他資訊」
 
 目前：
 
-UI 尚未串接。
+- 自由行與跟團旅程皆已顯示「其他資訊」
+- Reference 資料由 seed data + local stored data 合併後唯讀呈現
+- Folder chips 自動換行，不使用水平 scrollbar
+- 顯示資料筆數、空狀態與只讀 item card
+- 不提供 APP 內新增、編輯、刪除
 
 ---
 
@@ -96,50 +104,27 @@ src/constants/
 
 # Build
 
-目前每一步皆已 Build 成功。
+目前已執行並通過：
 
-Git：
+```bash
+npm.cmd run build
+```
 
-每 Step：
-
-Build
-
-↓
-
-Commit
-
-↓
-
-Push
-
-皆已完成。
+僅剩 Vite chunk size warning，非 V3-1 阻塞項目。
 
 ---
 
 # 下一步
 
-開始建立：
+建議流程：
 
-OtherInfoPage
+1. 瀏覽器手測 Other Info：
+   - 左側是否出現「其他資訊」
+   - 自由行 / 跟團切換後資料是否各自正確
+   - folder chips 是否換行整齊
+   - 原本文字頁是否仍維持 Text Page 呈現
 
-並正式串接 UI。
-
-流程：
-
-其他資訊
-
-↓
-
-第一層固定分類
-
-↓
-
-第二層旅程卡片
-
-↓
-
-第三層資料分類
-
-↓
-
-內容頁
+2. 若 UI / 資料 OK，下一個功能建議進入 Checklist Module 重構：
+   - 將「共同檢查清單」從目前單一 checkedItems state 拆出
+   - 建立 Trip-scoped checklist tool
+   - 為 Public Checklist / Private Checklist 與 local persistence 預留架構

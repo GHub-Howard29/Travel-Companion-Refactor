@@ -1,80 +1,126 @@
-/**
- * Other Info Page（其他資訊頁面）
- *
- * 負責顯示「其他資訊」功能的第一層固定分類卡片。
- *
- * 第一層分類由系統固定建立，例如景點、機票、飯店。
- * 本頁目前只做唯讀展示，不提供新增、編輯或刪除。
- */
+import { useEffect, useMemo, useState } from "react";
+import { FileText, FolderOpen } from "lucide-react";
 
-// ================================
-// Import
-// ================================
-
-import type { Folder } from "../types";
-import { getDefaultFolders } from "../services/otherInfoService";
-
-// ================================
-// Types
-// ================================
+import type { Folder, OtherInfoItem } from "../types";
+import {
+  getFolders,
+  getItems,
+} from "../services/otherInfoService";
+import { getOtherInfoItemsByFolderId } from "../utils/otherInfoUtils";
 
 interface OtherInfoPageProps {
   tripId: string;
+  introTitle?: string;
+  introContent?: string;
 }
 
-// ================================
-// Public Component
-// ================================
+export const OtherInfoPage = ({
+  tripId,
+  introTitle,
+  introContent,
+}: OtherInfoPageProps) => {
+  const folders = useMemo<Folder[]>(() => getFolders(tripId), [tripId]);
+  const items = useMemo<OtherInfoItem[]>(() => getItems(tripId), [tripId]);
+  const [activeFolderId, setActiveFolderId] = useState(() => folders[0]?.id ?? "");
 
-export const OtherInfoPage = ({ tripId }: OtherInfoPageProps) => {
-  const folders = getDefaultFolders(tripId);
+  const activeFolder = folders.find((folder) => folder.id === activeFolderId);
+  const activeItems = useMemo(
+    () => getOtherInfoItemsByFolderId(items, activeFolderId),
+    [items, activeFolderId],
+  );
+  const hasIntroContent = Boolean(introTitle || introContent);
+
+  useEffect(() => {
+    setActiveFolderId(folders[0]?.id ?? "");
+  }, [folders]);
 
   return (
-    <section>
-      <h2>其他資訊</h2>
+    <section className="space-y-5">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+          Reference
+        </p>
+        <h2 className="text-2xl font-extrabold text-slate-900">旅行資訊</h2>
+      </div>
 
-      <p style={{ color: "#666", marginBottom: "16px" }}>
-        請選擇要查看的資料分類。
-      </p>
+      {hasIntroContent && (
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          {introTitle && (
+            <h3 className="mb-2 text-base font-bold text-slate-800">
+              {introTitle}
+            </h3>
+          )}
+          {introContent && (
+            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+              {introContent}
+            </p>
+          )}
+        </div>
+      )}
 
-      <div
-        style={{
-          display: "grid",
-          gap: "12px",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-        }}
-      >
-        {folders.map((folder) => (
-          <OtherInfoCategoryCard key={folder.id} folder={folder} />
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {folders.map((folder) => {
+          const isActive = folder.id === activeFolderId;
+          const count = getOtherInfoItemsByFolderId(items, folder.id).length;
+
+          return (
+            <button
+              key={folder.id}
+              type="button"
+              onClick={() => setActiveFolderId(folder.id)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${
+                isActive
+                  ? "border-stone-900 bg-stone-900 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-stone-300 hover:bg-stone-50"
+              }`}
+            >
+              <FolderOpen size={16} />
+              <span>{folder.title}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  isActive ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <h3 className="text-sm font-extrabold text-slate-700">
+            {activeFolder?.title ?? "旅行資訊"}
+          </h3>
+          <span className="text-xs font-semibold text-slate-400">
+            {activeItems.length} 筆
+          </span>
+        </div>
+
+        {activeItems.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
+            這個資料夾目前沒有資訊
+          </div>
+        ) : (
+          activeItems.map((item) => (
+            <article
+              key={item.id}
+              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <div className="mb-2 flex items-start gap-2">
+                <FileText className="mt-0.5 text-stone-500" size={18} />
+                <h4 className="text-base font-bold leading-snug text-slate-800">
+                  {item.title}
+                </h4>
+              </div>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                {item.content}
+              </p>
+            </article>
+          ))
+        )}
       </div>
     </section>
-  );
-};
-
-// ================================
-// Private Components
-// ================================
-
-interface OtherInfoCategoryCardProps {
-  folder: Folder;
-}
-
-const OtherInfoCategoryCard = ({ folder }: OtherInfoCategoryCardProps) => {
-  return (
-    <button
-      type="button"
-      style={{
-        border: "1px solid #ddd",
-        borderRadius: "12px",
-        background: "#fff",
-        padding: "16px",
-        textAlign: "left",
-        cursor: "pointer",
-        boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
-      }}
-    >
-      <strong>{folder.title}</strong>
-    </button>
   );
 };
