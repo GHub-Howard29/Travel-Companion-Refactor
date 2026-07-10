@@ -1,4 +1,5 @@
-import { Check } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ChecklistItem } from "../types";
@@ -10,6 +11,8 @@ interface ChecklistPageProps {
   supabase: SupabaseClient;
   canViewSharedChecklist: boolean;
   canToggleSharedChecklist: boolean;
+  canManageSharedChecklist: boolean;
+  onSaveChecklistData: (items: ChecklistItem[]) => Promise<void>;
 }
 
 export const ChecklistPage = ({
@@ -18,7 +21,14 @@ export const ChecklistPage = ({
   supabase,
   canViewSharedChecklist,
   canToggleSharedChecklist,
+  canManageSharedChecklist,
+  onSaveChecklistData,
 }: ChecklistPageProps) => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [draftCategory, setDraftCategory] = useState("其他");
+  const [draftLabel, setDraftLabel] = useState("");
+  const [isSavingList, setIsSavingList] = useState(false);
   const { items, syncStatus, syncError, toggleChecklistItem } =
     useChecklistState(
       tripId,
@@ -48,13 +58,68 @@ export const ChecklistPage = ({
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="text-center py-12 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl shadow-sm">
-        此行程尚未配置檢查清單。
-      </div>
-    );
-  }
+  const resetForm = () => {
+    setIsFormOpen(false);
+    setEditingItemId(null);
+    setDraftCategory("其他");
+    setDraftLabel("");
+  };
+
+  const startCreateItem = () => {
+    setEditingItemId(null);
+    setDraftCategory(categories[0] ?? "其他");
+    setDraftLabel("");
+    setIsFormOpen(true);
+  };
+
+  const startEditItem = (item: ChecklistItem) => {
+    setEditingItemId(item.id);
+    setDraftCategory(item.category);
+    setDraftLabel(item.label);
+    setIsFormOpen(true);
+  };
+
+  const saveChecklistItem = async (event: FormEvent) => {
+    event.preventDefault();
+    const category = draftCategory.trim() || "其他";
+    const label = draftLabel.trim();
+    if (!label) return;
+
+    setIsSavingList(true);
+    const nextItems = editingItemId
+      ? checklistData.map((item) =>
+          item.id === editingItemId
+            ? {
+                ...item,
+                category,
+                label,
+              }
+            : item,
+        )
+      : [
+          ...checklistData,
+          {
+            id: `shared_${Date.now().toString(36)}`,
+            category,
+            label,
+          },
+        ];
+
+    await onSaveChecklistData(nextItems);
+    setIsSavingList(false);
+    resetForm();
+  };
+
+  const deleteChecklistItem = async (itemId: string) => {
+    const targetItem = checklistData.find((item) => item.id === itemId);
+    if (!targetItem) return;
+    if (!confirm(`確定刪除「${targetItem.label}」？`)) return;
+
+    setIsSavingList(true);
+    await onSaveChecklistData(checklistData.filter((item) => item.id !== itemId));
+    setIsSavingList(false);
+    resetForm();
+  };
 
   return (
     <div className="space-y-6">
@@ -87,6 +152,52 @@ export const ChecklistPage = ({
         )}
       </div>
 
+      {canManageSharedChecklist && (
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-800">共同清單管理</h3>
+            <button
+              type="button"
+              onClick={isFormOpen ? resetForm : startCreateItem}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
+            >
+              {isFormOpen ? <X size={14} /> : <Plus size={14} />}
+            </button>
+          </div>
+
+          {isFormOpen && (
+            <form onSubmit={saveChecklistItem} className="space-y-2">
+              <input
+                value={draftCategory}
+                onChange={(event) => setDraftCategory(event.target.value)}
+                placeholder="分類"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
+              <input
+                value={draftLabel}
+                onChange={(event) => setDraftLabel(event.target.value)}
+                placeholder="項目名稱"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isSavingList}
+                className="w-full rounded-lg bg-rose-700 px-3 py-2 text-sm font-bold text-white hover:bg-rose-800 disabled:opacity-60"
+              >
+                {isSavingList ? "儲存中..." : editingItemId ? "儲存修改" : "新增項目"}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {items.length === 0 && (
+        <div className="text-center py-12 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl shadow-sm">
+          此行程尚未配置檢查清單。
+        </div>
+      )}
+
       {categories.map((category) => (
         <div key={category} className="space-y-2">
           <h3 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider pl-1">
@@ -99,37 +210,63 @@ export const ChecklistPage = ({
                 const isChecked = item.isChecked;
 
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    disabled={!canToggleSharedChecklist}
-                    onClick={() => {
-                      if (!canToggleSharedChecklist) return;
-                      toggleChecklistItem(item.id);
-                    }}
                     className={`flex w-full items-center gap-3 p-4 text-left transition-colors select-none ${
                       canToggleSharedChecklist
                         ? "hover:bg-slate-50/80 cursor-pointer"
                         : "cursor-not-allowed bg-slate-50/40"
                     }`}
                   >
-                    <span
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        isChecked
-                          ? "bg-rose-600 border-rose-600 text-white shadow-sm scale-105"
-                          : "border-slate-300 bg-white"
-                      }`}
+                    <button
+                      type="button"
+                      disabled={!canToggleSharedChecklist}
+                      onClick={() => {
+                        if (!canToggleSharedChecklist) return;
+                        toggleChecklistItem(item.id);
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      {isChecked && <Check size={14} strokeWidth={3} />}
-                    </span>
-                    <span
-                      className={`text-sm font-medium transition-all ${
-                        isChecked ? "text-slate-400 line-through" : "text-slate-700"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </button>
+                      <span
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                          isChecked
+                            ? "bg-rose-600 border-rose-600 text-white shadow-sm scale-105"
+                            : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isChecked && <Check size={14} strokeWidth={3} />}
+                      </span>
+                      <span
+                        className={`text-sm font-medium transition-all ${
+                          isChecked ? "text-slate-400 line-through" : "text-slate-700"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                    {canManageSharedChecklist && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEditItem(item)}
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          aria-label="編輯共同清單項目"
+                          title="編輯共同清單項目"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteChecklistItem(item.id)}
+                          className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700"
+                          aria-label="刪除共同清單項目"
+                          title="刪除共同清單項目"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
           </div>

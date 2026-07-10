@@ -81,10 +81,15 @@
 - 共同檢查清單已完成最小雲端同步
 - Trip 管理第一階段大架構已完成：
   - App 內新增 / 編輯旅程基本資料
+  - App 內新增 / 編輯每日行程資料第一版
+  - App 內新增 / 編輯 / 刪除共同清單項目第一版
   - JSON seed + Supabase trips + localStorage fallback 合併
   - `super_admin` 新增旅程
   - `trip_editor` 編輯被指派旅程
   - 可編輯者 Email 由 `admin_users` 管理
+  - 可編輯者 Email 不可填入既有 `super_admin`
+  - 新增 / 編輯旅程時參與者至少需一位
+  - 預設旅程選擇已支援旅程期間與最近旅程邏輯
   - Trip Cloud schema / validation SQL 已透過 Supabase connector 執行並驗證
 - 已建立目前功能權限矩陣草案
 
@@ -156,7 +161,7 @@ Expense Module
 - [x] 定案私人檢查清單放在左上角功能選單中，位於共同檢查清單下方
 - [x] 定案 super_admin 不可查看其他使用者私人檢查清單
 - [x] 確認 trip_editor 不可查看其他成員私人檢查清單
-- [ ] 評估共同檢查清單 App 內新增 / 編輯 / 刪除項目
+- [x] 評估共同檢查清單 App 內新增 / 編輯 / 刪除項目
 - [x] 設計 Supabase checklist tables / RLS
 - [x] 在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`
 - [x] 在 Supabase SQL Editor 執行 `docs/sql/002_checklist_cloud_validation.sql`
@@ -168,6 +173,7 @@ Expense Module
 - [x] 共同檢查清單勾選狀態同步 Supabase
 - [x] `guest` / `user` 查看共同檢查清單時顯示乾淨未勾選版本
 - [x] 補上共同檢查清單權限過濾
+- [x] 共同檢查清單 App 內新增 / 編輯 / 刪除項目第一版
 
 ---
 
@@ -183,8 +189,13 @@ Trip 管理
 - [x] 出發日期顯示於首頁標題並參與排序
 - [x] 天數產生 Day 1 ~ Day N
 - [x] 參與者作為帳本付款人來源
+- [x] 新增 / 編輯旅程時參與者至少需輸入一位
 - [x] 預設幣別作為帳本參考
 - [x] 可編輯者 Email 同步 `admin_users`
+- [x] 可編輯者 Email 不可填入既有 `super_admin`
+- [x] 預設旅程依「今天位於旅程期間內 → 最近未來旅程 → 最近歷史旅程」選擇
+- [x] App 內新增 / 編輯 / 刪除每日行程資料第一版
+- [x] App 內新增 / 編輯 / 刪除共同清單項目第一版
 - [x] `super_admin` 可新增旅程
 - [x] `trip_editor` 可編輯被指派旅程
 - [x] 旅程清單合併 JSON seed / Supabase trips / localStorage fallback

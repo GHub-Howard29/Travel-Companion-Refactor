@@ -49,6 +49,11 @@ V3-1 目前已完成：
 - `npm run build` 通過，僅剩 Vite chunk size warning。
 - Trip 管理第一階段大架構已完成：
   - App 內新增 / 編輯旅程基本資料。
+  - App 內新增 / 編輯 / 刪除每日行程資料第一版。
+  - App 內新增 / 編輯 / 刪除共同清單項目第一版。
+  - 新增 / 編輯旅程時參與者至少需一位。
+  - 可編輯者 Email 不可填入既有 `super_admin`。
+  - 預設旅程選擇已支援旅程期間與最近旅程邏輯。
   - 旅程清單改為 JSON seed + Supabase trips + localStorage fallback 合併。
   - `super_admin` 可新增旅程。
   - `trip_editor` 可編輯被指派旅程。

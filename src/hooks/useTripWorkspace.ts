@@ -7,10 +7,12 @@ import { createPermission } from "../permissions/permission";
 import { mapRole } from "../permissions/roleMapper";
 import {
   createTripRecord,
+  createTripRecordFromDetail,
   createTripRecordFromExisting,
   getTripDetail,
   getTripEditorEmails,
   getTripMetas,
+  getSuperAdminEmails,
   saveTripRecordWithCloudSync,
   syncTripEditorEmails,
   updateTripRecord,
@@ -34,6 +36,7 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
   const [hasEditPermission, setHasEditPermission] = useState<boolean>(false);
   const [expenseBookTripId, setExpenseBookTripId] = useState<string>("");
   const [currentTripEditorEmails, setCurrentTripEditorEmails] = useState<string[]>([]);
+  const [superAdminEmails, setSuperAdminEmails] = useState<string[]>([]);
 
   const selectedTripMeta = tripOptions.find((trip) => trip.id === selectedTripId);
   const currentMembers = selectedTripMeta?.participants || ["我", "小明", "小華"];
@@ -190,6 +193,17 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
 
       setHasEditPermission(isAuthorized);
 
+      if (profile?.role === "super_admin") {
+        getSuperAdminEmails(supabase)
+          .then(setSuperAdminEmails)
+          .catch((error) => {
+            console.warn(error);
+            setSuperAdminEmails([]);
+          });
+      } else {
+        setSuperAdminEmails([]);
+      }
+
       if (isAuthorized) {
         localStorage.setItem(`auth_${selectedTripId}`, "true");
       }
@@ -253,6 +267,30 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     [currentTrip, getBasePath, selectedTripId, selectedTripMeta, supabase],
   );
 
+  const saveCurrentTripDetail = useCallback(
+    async (nextTrip: TripDetail) => {
+      if (!selectedTripMeta) return;
+
+      const record = createTripRecordFromDetail(
+        selectedTripMeta,
+        nextTrip,
+        currentTripEditorEmails,
+      );
+
+      await saveTripRecordWithCloudSync(supabase, record);
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      setTripOptions(nextTrips);
+      setCurrentTrip(nextTrip);
+      setIsLoading(false);
+    },
+    [
+      currentTripEditorEmails,
+      getBasePath,
+      selectedTripMeta,
+      supabase,
+    ],
+  );
+
   return {
     userEmail,
     userId,
@@ -289,6 +327,8 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     permission,
     createTrip,
     updateTrip,
+    saveCurrentTripDetail,
     currentTripEditorEmails,
+    superAdminEmails,
   };
 }

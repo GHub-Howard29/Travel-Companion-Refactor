@@ -8,7 +8,13 @@ import { MapPin, ExternalLink } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 // 旅程型別
-import type { SidebarItemConfig, TripEditorInput, TripMeta } from "./types";
+import type {
+  ChecklistItem,
+  ItineraryItem,
+  SidebarItemConfig,
+  TripEditorInput,
+  TripMeta,
+} from "./types";
 
 // 導航工具
 import { handleNavigate } from "./utils/navigationUtils";
@@ -29,6 +35,24 @@ import { AppContext } from "./app/context/AppContext";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const ITINERARY_TYPE_OPTIONS = [
+  { type: "交通", typeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { type: "住宿", typeColor: "bg-amber-50 text-amber-700 border-amber-200" },
+  { type: "景點", typeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+  { type: "餐飲", typeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+  { type: "自駕", typeColor: "bg-orange-50 text-orange-700 border-orange-200" },
+  { type: "其他", typeColor: "bg-slate-50 text-slate-700 border-slate-200" },
+];
+
+const createEmptyItineraryDraft = (): ItineraryItem => ({
+  time: "",
+  title: "",
+  type: "景點",
+  typeColor: "bg-purple-50 text-purple-700 border-purple-200",
+  desc: "",
+  location: "",
+});
 
 export default function App() {
   const {
@@ -65,10 +89,17 @@ export default function App() {
     permission,
     createTrip,
     updateTrip,
+    saveCurrentTripDetail,
     currentTripEditorEmails,
+    superAdminEmails,
   } = useTripWorkspace({ supabase });
   const [tripEditorMode, setTripEditorMode] = useState<"create" | "edit">("create");
   const [isTripEditorOpen, setIsTripEditorOpen] = useState(false);
+  const [isItineraryFormOpen, setIsItineraryFormOpen] = useState(false);
+  const [editingItineraryIndex, setEditingItineraryIndex] = useState<number | null>(null);
+  const [itineraryDraft, setItineraryDraft] = useState<ItineraryItem>(
+    createEmptyItineraryDraft,
+  );
 
   const {
     newTitle,
@@ -233,6 +264,99 @@ export default function App() {
     setIsTripEditorOpen(false);
     setIsMenuOpen(false);
   };
+  const handleSaveChecklistData = async (items: ChecklistItem[]) => {
+    if (!currentTrip) return;
+
+    await saveCurrentTripDetail({
+      ...currentTrip,
+      content: {
+        ...currentTrip.content,
+        checklistData: items,
+      },
+    });
+  };
+  const resetItineraryForm = () => {
+    setIsItineraryFormOpen(false);
+    setEditingItineraryIndex(null);
+    setItineraryDraft(createEmptyItineraryDraft());
+  };
+  const startCreateItineraryItem = () => {
+    setEditingItineraryIndex(null);
+    setItineraryDraft(createEmptyItineraryDraft());
+    setIsItineraryFormOpen(true);
+  };
+  const startEditItineraryItem = (event: ItineraryItem, index: number) => {
+    setEditingItineraryIndex(index);
+    setItineraryDraft(event);
+    setIsItineraryFormOpen(true);
+  };
+  const updateItineraryDraft = (patch: Partial<ItineraryItem>) => {
+    setItineraryDraft((currentDraft) => ({
+      ...currentDraft,
+      ...patch,
+    }));
+  };
+  const handleItineraryTypeChange = (type: string) => {
+    const selectedType =
+      ITINERARY_TYPE_OPTIONS.find((option) => option.type === type) ??
+      ITINERARY_TYPE_OPTIONS[ITINERARY_TYPE_OPTIONS.length - 1];
+
+    updateItineraryDraft({
+      type: selectedType.type,
+      typeColor: selectedType.typeColor,
+    });
+  };
+  const saveItineraryItem = async () => {
+    if (!currentTrip || !itineraryDraft.title.trim()) return;
+
+    const dayKey = String(activeDay);
+    const currentEvents = currentTrip.content.daysData[dayKey] ?? [];
+    const nextEvent: ItineraryItem = {
+      ...itineraryDraft,
+      time: itineraryDraft.time.trim(),
+      title: itineraryDraft.title.trim(),
+      desc: itineraryDraft.desc.trim(),
+      location: itineraryDraft.location.trim(),
+    };
+    const nextEvents =
+      editingItineraryIndex === null
+        ? [...currentEvents, nextEvent]
+        : currentEvents.map((event, index) =>
+            index === editingItineraryIndex ? nextEvent : event,
+          );
+
+    await saveCurrentTripDetail({
+      ...currentTrip,
+      content: {
+        ...currentTrip.content,
+        daysData: {
+          ...currentTrip.content.daysData,
+          [dayKey]: nextEvents,
+        },
+      },
+    });
+    resetItineraryForm();
+  };
+  const deleteItineraryItem = async (index: number) => {
+    if (!currentTrip) return;
+    const dayKey = String(activeDay);
+    const currentEvents = currentTrip.content.daysData[dayKey] ?? [];
+    const targetEvent = currentEvents[index];
+    if (!targetEvent) return;
+    if (!confirm(`確定刪除「${targetEvent.title}」？`)) return;
+
+    await saveCurrentTripDetail({
+      ...currentTrip,
+      content: {
+        ...currentTrip.content,
+        daysData: {
+          ...currentTrip.content.daysData,
+          [dayKey]: currentEvents.filter((_, eventIndex) => eventIndex !== index),
+        },
+      },
+    });
+    resetItineraryForm();
+  };
   const currentScreenType = getCurrentScreenType();
 
   useEffect(() => {
@@ -301,6 +425,7 @@ export default function App() {
           trip={tripEditorMode === "edit" ? selectedTripMeta ?? null : null}
           tripDetail={tripEditorMode === "edit" ? currentTrip : null}
           editorEmails={tripEditorMode === "edit" ? currentTripEditorEmails : []}
+          superAdminEmails={superAdminEmails}
           canManageEditors={adminProfile?.role === "super_admin"}
           isOpen={isTripEditorOpen}
           onClose={() => setIsTripEditorOpen(false)}
@@ -350,6 +475,82 @@ export default function App() {
                   </div>
                 </div>
 
+                {hasEditPermission && (
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-800">
+                        Day {activeDay} 行程管理
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={isItineraryFormOpen ? resetItineraryForm : startCreateItineraryItem}
+                        className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                      >
+                        {isItineraryFormOpen ? "取消" : "新增活動"}
+                      </button>
+                    </div>
+
+                    {isItineraryFormOpen && (
+                      <div className="mt-3 space-y-2">
+                        <div className="grid grid-cols-[92px_1fr] gap-2">
+                          <input
+                            value={itineraryDraft.time}
+                            onChange={(event) =>
+                              updateItineraryDraft({ time: event.target.value })
+                            }
+                            placeholder="09:00"
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <select
+                            value={itineraryDraft.type}
+                            onChange={(event) => handleItineraryTypeChange(event.target.value)}
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {ITINERARY_TYPE_OPTIONS.map((option) => (
+                              <option key={option.type} value={option.type}>
+                                {option.type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <input
+                          value={itineraryDraft.title}
+                          onChange={(event) =>
+                            updateItineraryDraft({ title: event.target.value })
+                          }
+                          placeholder="活動標題"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <textarea
+                          value={itineraryDraft.desc}
+                          onChange={(event) =>
+                            updateItineraryDraft({ desc: event.target.value })
+                          }
+                          rows={3}
+                          placeholder="說明"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <input
+                          value={itineraryDraft.location}
+                          onChange={(event) =>
+                            updateItineraryDraft({ location: event.target.value })
+                          }
+                          placeholder="地圖地點"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void saveItineraryItem()}
+                          disabled={!itineraryDraft.title.trim()}
+                          className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
+                        >
+                          {editingItineraryIndex === null ? "新增行程" : "儲存行程"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {currentDayEvents.length > 0 ? (
                   <div className="space-y-4">
                     {currentDayEvents.map((event, idx) => (
@@ -386,6 +587,24 @@ export default function App() {
                             </button>
                           </div>
                         )}
+                        {hasEditPermission && (
+                          <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+                            <button
+                              type="button"
+                              onClick={() => startEditItineraryItem(event, idx)}
+                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200"
+                            >
+                              編輯
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteItineraryItem(idx)}
+                              className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                            >
+                              刪除
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -405,6 +624,8 @@ export default function App() {
                 supabase={supabase}
                 canViewSharedChecklist={permission.canViewSharedChecklist}
                 canToggleSharedChecklist={permission.canToggleSharedChecklist}
+                canManageSharedChecklist={hasEditPermission}
+                onSaveChecklistData={handleSaveChecklistData}
               />
             )}
 

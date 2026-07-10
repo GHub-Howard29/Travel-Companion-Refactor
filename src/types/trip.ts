@@ -3,6 +3,7 @@ export interface TripMeta {
   id: string;
   title: string;
   departureDate: string; // 格式統一為 YYYY-MM-DD
+  dayCount?: number;
   detailPath?: string;
   participants: string[];
   currencyConfig: {

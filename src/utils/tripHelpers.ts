@@ -1,4 +1,4 @@
-import type { TripMeta } from '../types/trip';
+import type { TripMeta } from "../types/trip";
 
 /**
  * 邏輯 1：左側選單排序（由新到舊 / 由近到遠）
@@ -12,32 +12,51 @@ export const sortTripsByDateDesc = (trips: TripMeta[]): TripMeta[] => {
   });
 };
 
+const toDateOnlyTime = (dateValue: string): number => {
+  const date = new Date(dateValue);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+};
+
+const getTripEndTime = (trip: TripMeta): number => {
+  const departureTime = toDateOnlyTime(trip.departureDate);
+  const safeDayCount = Math.max(1, trip.dayCount ?? 1);
+  return departureTime + (safeDayCount - 1) * 24 * 60 * 60 * 1000;
+};
+
 /**
  * 邏輯 2：自動尋找「最新出發」作為首頁預設值
- * 優先尋找「今天或未來」的行程中最近的那一個；若全部行程都過期了，則選擇離今天最近的歷史行程。
+ * 優先尋找今天落在旅程日期區間內的旅程。
+ * 若沒有，且未來還有旅程，選擇最接近今天的未來旅程。
+ * 若未來完全沒有旅程，選擇離今天最近的歷史旅程。
  */
 export const findDefaultTrip = (trips: TripMeta[]): TripMeta | null => {
   if (trips.length === 0) return null;
 
   const now = new Date();
-  // 將今天的時間重設為 00:00:00，只比對日期本身
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-  // 1. 先篩選出「今天或未來」的行程
-  const upcomingTrips = trips.filter(trip => {
-    const tripDate = new Date(trip.departureDate).getTime();
-    return tripDate >= today;
+  const activeTrips = trips.filter((trip) => {
+    const departureTime = toDateOnlyTime(trip.departureDate);
+    return departureTime <= today && today <= getTripEndTime(trip);
   });
 
-  if (upcomingTrips.length > 0) {
-    // 未來行程中，日期「最接近今天（即差值最小、日期最早）」的排在最前面
-    return upcomingTrips.sort((a, b) => {
-      return new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime();
+  if (activeTrips.length > 0) {
+    return activeTrips.sort((a, b) => {
+      return toDateOnlyTime(a.departureDate) - toDateOnlyTime(b.departureDate);
     })[0];
   }
 
-  // 2. 如果沒有任何未來行程，代表全是歷史行程，選擇「離今天最近（日期最新）」的歷史行程
+  const upcomingTrips = trips.filter((trip) => {
+    return toDateOnlyTime(trip.departureDate) > today;
+  });
+
+  if (upcomingTrips.length > 0) {
+    return upcomingTrips.sort((a, b) => {
+      return toDateOnlyTime(a.departureDate) - toDateOnlyTime(b.departureDate);
+    })[0];
+  }
+
   return trips.sort((a, b) => {
-    return new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime();
+    return getTripEndTime(b) - getTripEndTime(a);
   })[0];
 };

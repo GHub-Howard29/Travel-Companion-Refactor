@@ -66,6 +66,32 @@ const fetchJson = async <T>(url: string): Promise<T | null> => {
   return (await response.json()) as T;
 };
 
+const withDayCount = (trip: TripMeta, detail: TripDetail | null): TripMeta => {
+  return {
+    ...trip,
+    dayCount: detail?.content.days.length ?? trip.dayCount ?? 1,
+  };
+};
+
+const enrichSeedTripsWithDayCount = async (
+  basePath: string,
+  seedTrips: TripMeta[],
+): Promise<TripMeta[]> => {
+  const enrichedTrips = await Promise.all(
+    seedTrips.map(async (trip) => {
+      const detailPath = trip.detailPath || `/trips/${trip.id}.json`;
+      const url = `${basePath}${detailPath.replace(/^\//, "")}`.replace(
+        /\/+/g,
+        "/",
+      );
+      const detail = await fetchJson<TripDetail>(url);
+      return withDayCount(trip, detail);
+    }),
+  );
+
+  return enrichedTrips;
+};
+
 const mergeTripRecords = (
   seedTrips: TripMeta[],
   cloudRecords: StoredTripRecord[],
@@ -114,7 +140,10 @@ export const getTripMetas = async (
   basePath: string,
 ): Promise<TripMeta[]> => {
   const seedUrl = `${basePath}trips/list.json`.replace(/\/+/g, "/");
-  const seedTrips = (await fetchJson<TripMeta[]>(seedUrl)) ?? [];
+  const seedTrips = await enrichSeedTripsWithDayCount(
+    basePath,
+    (await fetchJson<TripMeta[]>(seedUrl)) ?? [],
+  );
   const cloudRecords = await getCloudTripRecords(supabase);
   const storedRecords = readStoredTripRecords();
 
@@ -149,6 +178,7 @@ export const createTripRecord = (input: TripEditorInput): StoredTripRecord => {
     id,
     title: input.title.trim(),
     departureDate: input.departureDate,
+    dayCount: input.dayCount,
     participants: input.participants.map((item) => item.trim()).filter(Boolean),
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
@@ -202,6 +232,7 @@ export const updateTripRecord = (
     ...currentRecord.meta,
     title: input.title.trim(),
     departureDate: input.departureDate,
+    dayCount: input.dayCount,
     participants: input.participants.map((item) => item.trim()).filter(Boolean),
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
@@ -244,6 +275,7 @@ export const createTripRecordFromExisting = (
     ...meta,
     title: input.title.trim(),
     departureDate: input.departureDate,
+    dayCount: input.dayCount,
     participants: input.participants.map((item) => item.trim()).filter(Boolean),
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
@@ -288,6 +320,24 @@ export const saveTripRecordWithCloudSync = async (
   }
 };
 
+export const createTripRecordFromDetail = (
+  meta: TripMeta,
+  detail: TripDetail,
+  editorEmails: string[],
+): StoredTripRecord => {
+  return {
+    meta: {
+      ...meta,
+      title: detail.title,
+      departureDate: detail.departureDate,
+      dayCount: detail.content.days.length,
+    },
+    detail,
+    editorEmails: normalizeEmails(editorEmails),
+    updatedAt: new Date().toISOString(),
+  };
+};
+
 export const getStoredTripEditorEmails = (tripId: string): string[] => {
   return (
     readStoredTripRecords().find((record) => record.meta.id === tripId)
@@ -318,6 +368,26 @@ export const getTripEditorEmails = async (
     ...localEmails,
     ...((data ?? []) as Array<{ email: string }>).map((row) => row.email),
   ]);
+};
+
+export const getSuperAdminEmails = async (
+  supabase: SupabaseClient,
+): Promise<string[]> => {
+  if (!navigator.onLine) return [];
+
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("email")
+    .eq("role", "super_admin");
+
+  if (error) {
+    console.warn("Failed to load super admin emails", error);
+    return [];
+  }
+
+  return normalizeEmails(
+    ((data ?? []) as Array<{ email: string | null }>).map((row) => row.email ?? ""),
+  );
 };
 
 export const syncTripEditorEmails = async (

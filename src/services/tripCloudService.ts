@@ -54,6 +54,7 @@ const toTripRecord = (row: CloudTripRow): StoredTripRecord | null => {
     id: row.id,
     title: row.title,
     departureDate: row.departure_date,
+    dayCount: row.content.days.length,
     participants,
     currencyConfig: row.currency_config,
   };

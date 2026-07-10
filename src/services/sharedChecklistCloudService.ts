@@ -223,9 +223,19 @@ export const syncCloudSharedChecklistSeedItems = async (
   }
 
   const checkedItemIdSet = new Set(checkedItemIds);
+  const activeSeedItemIdSet = new Set(seedItems.map((item) => item.id));
   const missingSeedItems = seedItems.filter(
     (item) => !existingRowsByClientItemId.has(item.id),
   );
+  const existingSeedRows = seedItems
+    .map((item) => {
+      const row = existingRowsByClientItemId.get(item.id);
+      return row ? { item, row } : null;
+    })
+    .filter(
+      (entry): entry is { item: ChecklistItem; row: CloudChecklistItemIdentityRow } =>
+        Boolean(entry),
+    );
   const deletedSeedRows = seedItems
     .map((item) => existingRowsByClientItemId.get(item.id))
     .filter((row): row is CloudChecklistItemIdentityRow =>
@@ -253,6 +263,21 @@ export const syncCloudSharedChecklistSeedItems = async (
     }
   }
 
+  for (const { item, row } of existingSeedRows) {
+    const { error: updateError } = await supabase
+      .from("checklist_items")
+      .update({
+        label: item.label,
+        sort_order: seedItems.findIndex((seedItem) => seedItem.id === item.id),
+        deleted_at: null,
+      })
+      .eq("id", row.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+  }
+
   if (deletedSeedRows.length > 0) {
     const { error: restoreError } = await supabase
       .from("checklist_items")
@@ -264,6 +289,28 @@ export const syncCloudSharedChecklistSeedItems = async (
 
     if (restoreError) {
       throw restoreError;
+    }
+  }
+
+  const removedSeedRows = ((existingRows ?? []) as CloudChecklistItemIdentityRow[])
+    .filter(
+      (row) =>
+        row.client_item_id &&
+        !activeSeedItemIdSet.has(row.client_item_id) &&
+        !row.deleted_at,
+    );
+
+  if (removedSeedRows.length > 0) {
+    const { error: removeError } = await supabase
+      .from("checklist_items")
+      .update({ deleted_at: new Date().toISOString() })
+      .in(
+        "id",
+        removedSeedRows.map((row) => row.id),
+      );
+
+    if (removeError) {
+      throw removeError;
     }
   }
 

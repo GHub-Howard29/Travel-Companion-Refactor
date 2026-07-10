@@ -132,7 +132,7 @@ export const useChecklistState = (
           });
           setCloudItemsByTripId((currentItemsByTripId) => ({
             ...currentItemsByTripId,
-            [tripId]: currentItemsByTripId[tripId] ?? nextCloudChecklist.items,
+            [tripId]: nextCloudChecklist.items,
           }));
         } else if (canSyncSharedChecklist) {
           const initializedChecklist = await initializeCloudSharedChecklist(

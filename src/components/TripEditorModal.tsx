@@ -7,6 +7,7 @@ interface TripEditorModalProps {
   trip: TripMeta | null;
   tripDetail: TripDetail | null;
   editorEmails: string[];
+  superAdminEmails: string[];
   canManageEditors: boolean;
   isOpen: boolean;
   onClose: () => void;
@@ -34,6 +35,7 @@ export const TripEditorModal = ({
   trip,
   tripDetail,
   editorEmails,
+  superAdminEmails,
   canManageEditors,
   isOpen,
   onClose,
@@ -56,6 +58,7 @@ export const TripEditorModal = ({
   const [currencySymbol, setCurrencySymbol] = useState(
     trip?.currencyConfig.symbol ?? "￥",
   );
+  const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -70,13 +73,39 @@ export const TripEditorModal = ({
     event.preventDefault();
     if (!title.trim() || !departureDate || dayCount < 1) return;
 
+    const nextParticipants = splitLines(participants);
+    if (nextParticipants.length === 0) {
+      const message = "請至少輸入一位參與者後再儲存。";
+      setFormError(message);
+      alert(message);
+      return;
+    }
+
+    const nextEditorEmails = splitLines(editorEmailText).map((email) =>
+      email.toLowerCase(),
+    );
+    const superAdminEmailSet = new Set(
+      superAdminEmails.map((email) => email.toLowerCase()),
+    );
+    const duplicatedSuperAdminEmails = nextEditorEmails.filter((email) =>
+      superAdminEmailSet.has(email),
+    );
+
+    if (canManageEditors && duplicatedSuperAdminEmails.length > 0) {
+      const message = `以下 Email 已是 super_admin 管理員帳號，不需要加入可編輯者：${duplicatedSuperAdminEmails.join("、")}。請清除後再儲存。`;
+      setFormError(message);
+      alert(message);
+      return;
+    }
+
+    setFormError("");
     setIsSaving(true);
     await onSubmit({
       title,
       departureDate,
       dayCount,
-      participants: splitLines(participants),
-      editorEmails: splitLines(editorEmailText),
+      participants: nextParticipants,
+      editorEmails: nextEditorEmails,
       currencyCode,
       currencySymbol,
     });
@@ -103,6 +132,12 @@ export const TripEditorModal = ({
             <X size={18} />
           </button>
         </div>
+
+        {formError && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+            {formError}
+          </div>
+        )}
 
         <label className="block">
           <span className="text-xs font-bold text-slate-500">旅程名稱</span>
@@ -147,6 +182,7 @@ export const TripEditorModal = ({
             rows={3}
             placeholder="Howard&#10;Carol"
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            required
           />
         </label>
 
