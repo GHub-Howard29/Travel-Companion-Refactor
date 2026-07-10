@@ -8,11 +8,13 @@ import type {
   TripMode,
 } from "../types";
 import {
+  deleteStoredTripRecord,
   readStoredTripRecords,
   upsertStoredTripRecord,
   type StoredTripRecord,
 } from "../storage/tripStorage";
 import {
+  deleteCloudTripRecord,
   getCloudTripRecords,
   upsertCloudTripRecord,
 } from "./tripCloudService";
@@ -432,6 +434,14 @@ export const saveTripRecordWithCloudSync = async (
       editorEmails: record.editorEmails,
     });
   }
+};
+
+export const deleteTripRecordWithCloudSync = async (
+  supabase: SupabaseClient,
+  tripId: string,
+): Promise<void> => {
+  deleteStoredTripRecord(tripId);
+  await deleteCloudTripRecord(supabase, tripId);
 };
 
 export const createTripRecordFromDetail = (

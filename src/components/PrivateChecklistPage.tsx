@@ -174,7 +174,16 @@ export const PrivateChecklistPage = ({
           {canSyncPrivateChecklist && syncStatus === "local" && "目前資料先保存於本機。"}
         </p>
         {canEditPrivateChecklist && (
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 space-y-2">
+            <p className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900">
+              如需複製使用舊有清單，請勿提早建立任何清單
+            </p>
+            {availableCopySources.length === 0 && (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">
+                未有私人歷史紀錄，請重新建立
+              </p>
+            )}
+            <div className="flex justify-end">
             <button
               type="button"
               onClick={() => {
@@ -187,6 +196,7 @@ export const PrivateChecklistPage = ({
               <Copy size={14} />
               複製清單
             </button>
+            </div>
           </div>
         )}
       </div>

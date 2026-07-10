@@ -12,6 +12,7 @@ interface TripEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (input: TripEditorInput) => Promise<void>;
+  onDelete?: () => Promise<void>;
 }
 
 const CURRENCY_OPTIONS = [
@@ -64,6 +65,7 @@ export const TripEditorModal = ({
   isOpen,
   onClose,
   onSubmit,
+  onDelete,
 }: TripEditorModalProps) => {
   const [title, setTitle] = useState(trip?.title ?? "");
   const [departureDate, setDepartureDate] = useState(
@@ -87,6 +89,7 @@ export const TripEditorModal = ({
   );
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -138,6 +141,22 @@ export const TripEditorModal = ({
       currencySymbol,
     });
     setIsSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (mode !== "edit" || !trip || !onDelete) return;
+
+    const firstConfirm = confirm(`確定要刪除「${trip.title}」整個旅程？`);
+    if (!firstConfirm) return;
+
+    const secondConfirm = confirm(
+      "刪除後會移除此旅程資料、可編輯者權限、清單與共用記帳資料。請再次確認是否刪除？",
+    );
+    if (!secondConfirm) return;
+
+    setIsDeleting(true);
+    await onDelete();
+    setIsDeleting(false);
   };
 
   return (
@@ -215,7 +234,12 @@ export const TripEditorModal = ({
         </label>
 
         <label className="block">
-          <span className="text-xs font-bold text-slate-500">參與者</span>
+          <span className="flex items-center justify-between gap-2 text-xs font-bold text-slate-500">
+            <span>參與者</span>
+            <span className="font-medium text-slate-400">
+              此欄位會決定出現在記帳本上的名稱
+            </span>
+          </span>
           <textarea
             value={participants}
             onChange={(event) => setParticipants(event.target.value)}
@@ -266,12 +290,25 @@ export const TripEditorModal = ({
 
         <button
           type="submit"
-          disabled={isSaving}
+          disabled={isSaving || isDeleting}
           className="w-full flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
         >
           <Save size={16} />
           {isSaving ? "儲存中..." : "儲存旅程"}
         </button>
+
+        {mode === "edit" && onDelete && (
+          <div className="border-t border-slate-100 pt-3">
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={isSaving || isDeleting}
+              className="w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+            >
+              {isDeleting ? "刪除中..." : "刪除整個旅程"}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

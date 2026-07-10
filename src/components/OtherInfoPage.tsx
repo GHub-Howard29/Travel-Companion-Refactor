@@ -28,6 +28,9 @@ interface OtherInfoPageProps {
   canEdit: boolean;
   items?: OtherInfoItem[];
   onSaveItems?: (items: OtherInfoItem[]) => Promise<void>;
+  pageTitle?: string;
+  isSpecialInfoPage?: boolean;
+  specialFolderId?: string;
 }
 
 const renderContentWithLinks = (content: string) => {
@@ -64,11 +67,15 @@ export const OtherInfoPage = ({
   canEdit,
   items: syncedItems,
   onSaveItems,
+  pageTitle = "旅行資訊",
+  isSpecialInfoPage = false,
+  specialFolderId,
 }: OtherInfoPageProps) => {
   const folders = useMemo<Folder[]>(() => getFolders(tripId), [tripId]);
+  const initialFolderId = specialFolderId || folders[0]?.id || "";
   const [localItems, setLocalItems] = useState<OtherInfoItem[]>(() => getItems(tripId));
   const items = syncedItems ?? localItems;
-  const [activeFolderId, setActiveFolderId] = useState(() => folders[0]?.id ?? "");
+  const [activeFolderId, setActiveFolderId] = useState(initialFolderId);
   const {
     editingItemId,
     form,
@@ -79,12 +86,15 @@ export const OtherInfoPage = ({
     openEditForm,
     syncFolderWhenNotEditing,
     updateForm,
-  } = useOtherInfoForm(folders[0]?.id ?? "");
+  } = useOtherInfoForm(initialFolderId);
 
   const activeFolder = folders.find((folder) => folder.id === activeFolderId);
   const activeItems = useMemo(
-    () => getOtherInfoItemsByFolderId(items, activeFolderId),
-    [items, activeFolderId],
+    () =>
+      isSpecialInfoPage
+        ? getOtherInfoItemsByFolderId(items, initialFolderId)
+        : getOtherInfoItemsByFolderId(items, activeFolderId),
+    [activeFolderId, initialFolderId, isSpecialInfoPage, items],
   );
 
   const persistItems = async (nextItems: OtherInfoItem[]) => {
@@ -125,31 +135,32 @@ export const OtherInfoPage = ({
       return;
     }
 
+    const targetFolderId = isSpecialInfoPage ? initialFolderId : form.folderId;
     const nextItems = onSaveItems
       ? editingItemId
         ? items.map((item) =>
             item.id === editingItemId
               ? {
                   ...item,
-                  folderId: form.folderId,
+                  folderId: targetFolderId,
                   title,
                   content,
                   updatedAt: new Date().toISOString(),
                 }
               : item,
           )
-        : [...items, createSyncedOtherInfoItem(form.folderId, title, content)]
+        : [...items, createSyncedOtherInfoItem(targetFolderId, title, content)]
       : editingItemId
         ? updateOtherInfoItem(tripId, editingItemId, {
-            folderId: form.folderId,
+            folderId: targetFolderId,
             title,
             content,
           })
-        : createOtherInfoItem(tripId, form.folderId, title, content);
+        : createOtherInfoItem(tripId, targetFolderId, title, content);
 
     await persistItems(nextItems);
-    setActiveFolderId(form.folderId);
-    closeForm(form.folderId);
+    setActiveFolderId(targetFolderId);
+    closeForm(targetFolderId);
   };
 
   const handleDelete = async (item: OtherInfoItem) => {
@@ -171,7 +182,7 @@ export const OtherInfoPage = ({
           <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
             Reference
           </p>
-          <h2 className="text-2xl font-extrabold text-slate-900">旅行資訊</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900">{pageTitle}</h2>
         </div>
 
         {canEdit && (
@@ -187,6 +198,7 @@ export const OtherInfoPage = ({
         )}
       </div>
 
+      {!isSpecialInfoPage && (
       <div className="flex flex-wrap gap-2">
         {folders.map((folder) => {
           const isActive = folder.id === activeFolderId;
@@ -219,6 +231,7 @@ export const OtherInfoPage = ({
           );
         })}
       </div>
+      )}
 
       {canEdit && isFormOpen && (
         <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
@@ -238,6 +251,7 @@ export const OtherInfoPage = ({
           </div>
 
           <div className="space-y-3">
+            {!isSpecialInfoPage && (
             <select
               value={form.folderId}
               onChange={(event) =>
@@ -253,6 +267,7 @@ export const OtherInfoPage = ({
                 </option>
               ))}
             </select>
+            )}
 
             <input
               value={form.title}
@@ -292,7 +307,7 @@ export const OtherInfoPage = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b border-slate-200 pb-2">
           <h3 className="text-sm font-extrabold text-slate-700">
-            {activeFolder?.title ?? "旅行資訊"}
+            {isSpecialInfoPage ? pageTitle : activeFolder?.title ?? "旅行資訊"}
           </h3>
           <span className="text-xs font-semibold text-slate-400">
             {activeItems.length} 筆
@@ -301,7 +316,7 @@ export const OtherInfoPage = ({
 
         {activeItems.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
-            這個資料夾目前沒有資訊
+            {isSpecialInfoPage ? "目前尚無資訊" : "這個資料夾目前沒有資訊"}
           </div>
         ) : (
           activeItems.map((item) => (

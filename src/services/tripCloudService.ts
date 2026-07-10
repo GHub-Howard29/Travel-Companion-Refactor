@@ -158,3 +158,36 @@ export const upsertCloudTripRecord = async (
 
   return toTripRecord(data as CloudTripRow);
 };
+
+export const deleteCloudTripRecord = async (
+  supabase: SupabaseClient,
+  tripId: string,
+): Promise<boolean> => {
+  if (!navigator.onLine) return false;
+
+  const cleanupRequests = [
+    supabase.from("checklists").delete().eq("trip_id", tripId),
+    supabase
+      .from("admin_users")
+      .delete()
+      .eq("role", "trip_editor")
+      .eq("trip_id", tripId),
+    supabase.from("expenses").delete().eq("trip_id", tripId),
+  ];
+
+  for (const request of cleanupRequests) {
+    const { error } = await request;
+    if (error) {
+      console.warn("Failed to clean related trip data", error);
+    }
+  }
+
+  const { error } = await supabase.from("trips").delete().eq("id", tripId);
+
+  if (error) {
+    console.warn("Failed to delete cloud trip", error);
+    return false;
+  }
+
+  return true;
+};

@@ -183,7 +183,11 @@ export const ChecklistPage = ({
           </p>
         )}
         {canManageSharedChecklist && (
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 space-y-2">
+            <p className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900">
+              如需複製使用舊有清單，請勿提早建立任何清單
+            </p>
+            <div className="flex justify-end">
             <button
               type="button"
               onClick={() => {
@@ -196,6 +200,7 @@ export const ChecklistPage = ({
               <Copy size={14} />
               複製清單
             </button>
+            </div>
           </div>
         )}
       </div>

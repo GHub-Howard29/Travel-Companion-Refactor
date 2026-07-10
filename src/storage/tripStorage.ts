@@ -50,3 +50,12 @@ export const upsertStoredTripRecord = (record: StoredTripRecord): StoredTripReco
   writeStoredTripRecords(nextRecords);
   return nextRecords;
 };
+
+export const deleteStoredTripRecord = (tripId: string): StoredTripRecord[] => {
+  const nextRecords = readStoredTripRecords().filter(
+    (record) => record.meta.id !== tripId,
+  );
+
+  writeStoredTripRecords(nextRecords);
+  return nextRecords;
+};

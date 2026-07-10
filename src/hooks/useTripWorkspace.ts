@@ -9,6 +9,7 @@ import {
   createTripRecord,
   createTripRecordFromDetail,
   createTripRecordFromExisting,
+  deleteTripRecordWithCloudSync,
   getTripDetail,
   getTripEditorEmails,
   getTripMetas,
@@ -267,6 +268,21 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     [currentTrip, getBasePath, selectedTripId, selectedTripMeta, supabase],
   );
 
+  const deleteTrip = useCallback(async (tripId: string) => {
+    if (!tripId) return;
+
+    await deleteTripRecordWithCloudSync(supabase, tripId);
+    const nextTrips = await getTripMetas(supabase, getBasePath());
+    const nextTrip = nextTrips.find((trip) => trip.id !== tripId) ?? nextTrips[0];
+
+    setTripOptions(nextTrips);
+    setSelectedTripId(nextTrip?.id ?? "");
+    setCurrentTrip(null);
+    setCurrentScreen("itinerary");
+    setActiveDay(1);
+    setIsLoading(Boolean(nextTrip));
+  }, [getBasePath, supabase]);
+
   const saveCurrentTripDetail = useCallback(
     async (nextTrip: TripDetail) => {
       if (!selectedTripMeta) return;
@@ -327,6 +343,7 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     permission,
     createTrip,
     updateTrip,
+    deleteTrip,
     saveCurrentTripDetail,
     currentTripEditorEmails,
     superAdminEmails,

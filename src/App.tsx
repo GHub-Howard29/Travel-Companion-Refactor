@@ -91,6 +91,7 @@ export default function App() {
     permission,
     createTrip,
     updateTrip,
+    deleteTrip,
     saveCurrentTripDetail,
     currentTripEditorEmails,
     superAdminEmails,
@@ -279,6 +280,14 @@ export default function App() {
     setIsTripEditorOpen(false);
     setIsMenuOpen(false);
   };
+  const handleTripDelete = async () => {
+    if (!selectedTripId) return;
+
+    setIsLoading(true);
+    await deleteTrip(selectedTripId);
+    setIsTripEditorOpen(false);
+    setIsMenuOpen(false);
+  };
   const handleSaveChecklistData = async (items: ChecklistItem[]) => {
     if (!currentTrip) return;
 
@@ -391,6 +400,14 @@ export default function App() {
     resetItineraryForm();
   };
   const currentScreenType = getCurrentScreenType();
+  const currentSidebarItem = currentTrip?.sidebarConfig.find(
+    (item) => item.id === currentScreen,
+  );
+  const isSpecialInfoPage = currentScreen === "trip_special_info";
+  const specialInfoFolderId =
+    currentTrip?.content.mode === "selfGuided"
+      ? "other-info-transport"
+      : "other-info-other";
 
   useEffect(() => {
     let isActive = true;
@@ -493,6 +510,7 @@ export default function App() {
           isOpen={isTripEditorOpen}
           onClose={() => setIsTripEditorOpen(false)}
           onSubmit={handleTripEditorSubmit}
+          onDelete={tripEditorMode === "edit" ? handleTripDelete : undefined}
         />
       )}
 
@@ -751,6 +769,9 @@ export default function App() {
                 canEdit={hasEditPermission}
                 items={currentTrip.content.otherInfoItems}
                 onSaveItems={handleSaveOtherInfoItems}
+                pageTitle={currentSidebarItem?.title}
+                isSpecialInfoPage={isSpecialInfoPage}
+                specialFolderId={specialInfoFolderId}
               />
             )}
 
