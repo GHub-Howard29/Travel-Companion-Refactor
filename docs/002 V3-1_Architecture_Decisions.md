@@ -272,6 +272,7 @@ V3-1
 - `usePrivateChecklistState` 負責私人確認清單畫面狀態轉接
 - `privateChecklistService` 負責私人確認清單本機資料操作
 - `privateChecklistStorage` 負責 `userEmail + tripId` localStorage 讀寫與執行期資料驗證
+- `privateChecklistCloudService` 負責私人確認清單最小雲端同步
 
 共同檢查清單資料流：
 
@@ -301,12 +302,25 @@ privateChecklistStorage
 localStorage
 ```
 
+私人確認清單雲端同步資料流：
+
+```text
+PrivateChecklistPage
+↓
+usePrivateChecklistState
+↓
+privateChecklistCloudService
+↓
+Supabase checklists / checklist_items
+```
+
 目前資料：
 
 - Trip JSON 的 `checklistData` 仍作為共同檢查清單 seed
 - 勾選狀態依 `tripId` 寫入 localStorage
 - 私人確認清單依 `userEmail + tripId` 寫入 localStorage
-- 私人確認清單目前只保存於本機，尚未同步 Supabase
+- 私人確認清單已完成最小雲端同步
+- 私人確認清單雲端 item 以 `client_item_id` 對應本機 `private_...` item id
 - F5 後保留勾選狀態
 - 不同 Trip 各自保留勾選狀態
 - 進度計算忽略已不存在的 checked item id
@@ -317,7 +331,6 @@ V3-1 第一階段尚不提供：
 - 共同檢查清單 App 內編輯檢查清單項目
 - 共同檢查清單 App 內刪除檢查清單項目
 - 共同檢查清單雲端同步
-- 私人確認清單雲端同步
 - Checklist Pending Queue
 - Checklist sync policy
 
@@ -351,12 +364,18 @@ trip_id = 目前旅程 id
 
 規則：
 
-- `guest` / `user` 不使用私人確認清單雲端同步。
+- `guest` / `user` 不使用私人確認清單雲端同步，仍保留本機資料。
 - `trip_editor` / `super_admin` 可同步自己的私人確認清單。
 - `trip_editor` / `super_admin` 不可讀取其他使用者私人確認清單。
 - `super_admin` 的管理權不包含查看所有私人確認清單內容。
 
-目前尚未執行 SQL 至 Supabase，也尚未接前端雲端同步流程。
+目前 SQL 已執行至 Supabase，前端已接上私人確認清單最小雲端同步流程。
+
+共同檢查清單尚未同步 Supabase，下一步採最小同步：
+
+- 若雲端沒有 `scope = shared` checklist，使用 Trip JSON `checklistData` 初始化。
+- 共同清單優先讀 Supabase shared checklist。
+- 先只同步勾選狀態，不提供共同項目新增、編輯、刪除。
 
 ---
 

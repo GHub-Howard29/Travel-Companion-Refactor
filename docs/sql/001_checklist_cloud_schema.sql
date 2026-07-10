@@ -97,6 +97,7 @@ where scope = 'private';
 create table if not exists public.checklist_items (
   id uuid primary key default gen_random_uuid(),
   checklist_id uuid not null references public.checklists(id) on delete cascade,
+  client_item_id text null,
   label text not null,
   is_checked boolean not null default false,
   sort_order integer not null default 0,
@@ -106,8 +107,15 @@ create table if not exists public.checklist_items (
   deleted_at timestamptz null
 );
 
+alter table public.checklist_items
+add column if not exists client_item_id text null;
+
 create index if not exists checklist_items_checklist_order
 on public.checklist_items (checklist_id, sort_order, created_at);
+
+create unique index if not exists checklist_items_one_client_item_per_checklist
+on public.checklist_items (checklist_id, client_item_id)
+where client_item_id is not null;
 
 create or replace function public.tc_touch_updated_at()
 returns trigger

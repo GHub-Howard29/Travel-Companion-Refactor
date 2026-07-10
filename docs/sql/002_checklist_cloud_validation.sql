@@ -17,6 +17,8 @@ where table_schema = 'public'
 order by table_name;
 
 -- 2. Columns
+-- checklist_items should include client_item_id so frontend local item IDs
+-- can be mapped to cloud UUID rows during sync.
 select
   table_name,
   column_name,

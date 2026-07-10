@@ -7,7 +7,7 @@
 # 目前開發狀態
 
 V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易本機管理工具第一階段串接。
-檢查清單模組也已完成第一階段拆分與依旅程區分的本機持久化。
+檢查清單模組已完成第一階段拆分、依旅程區分的本機持久化，以及私人確認清單最小雲端同步。
 
 目前已完成：
 
@@ -53,7 +53,13 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 - 「私人確認清單」已建立獨立功能選單入口，位於共同檢查清單下方
 - 私人確認清單已依 `userEmail + tripId` 寫入 localStorage
 - 私人確認清單支援新增、編輯、刪除、勾選與進度顯示
+- 私人確認清單已接上最小雲端同步
+- `trip_editor` / `super_admin` 可同步自己的私人確認清單到 Supabase
+- 私人確認清單雲端同步只讀寫 `owner_user_id = auth.uid()` 的資料，不可讀取其他使用者私人清單
+- 私人確認清單雲端 item 使用 `client_item_id` 對應本機 `private_...` item id
+- 私人確認清單 UI 會顯示同步中、已同步、同步失敗等狀態
 - 未登入使用者不顯示私人確認清單入口
+- 未登入狀態停留在私人確認清單或記帳本時，會自動導回行程頁
 - 重新整理後可保留已勾選項目
 - 自由行 / 跟團各自保留勾選狀態
 - App.tsx 不再直接持有 checkedItems state
@@ -67,9 +73,9 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 
 - 共同檢查清單 App 內新增 / 編輯 / 刪除 item
 - 共同檢查清單雲端同步
-- 私人確認清單雲端同步
-- Supabase SQL Editor 尚未執行 checklist schema
+- 共同檢查清單 seed 初始化至 Supabase
 - Checklist sync policy 尚未接進前端
+- Checklist Pending Queue / Conflict Resolution 尚未實作
 
 權限定案：
 
@@ -99,6 +105,7 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 - `trip_editor` / `super_admin` 可新增 / 編輯 / 刪除自己的私人檢查清單，並可自動同步到雲端。
 - `trip_editor` / `super_admin` 都不可查看其他使用者的私人檢查清單。
 - 私人檢查清單放在左上角功能選單中，位置在共同檢查清單下方；不放進共同檢查清單頁面內。
+- 共同檢查清單下一步雲端同步仍維持 guest / user 可見不可勾選，`trip_editor` / `super_admin` 可勾選。
 
 ---
 
@@ -158,7 +165,7 @@ OtherInfoService
 
 - `docs/sql/001_checklist_cloud_schema.sql`
 
-目前尚未直接執行到 Supabase。
+已由 Product Owner 在 Supabase SQL Editor 執行並人工確認完成。
 
 此 SQL 採用目前既有的 `admin_users(email, role, trip_id)` 作為權限來源。
 
@@ -171,6 +178,15 @@ OtherInfoService
 - `super_admin` 不可查看其他使用者私人確認清單。
 - `trip_editor` 不可查看其他使用者私人確認清單。
 - `trip_editor` / `super_admin` 只可同步自己的私人確認清單。
+- `checklist_items.client_item_id` 已建立，用來保存前端本機 item id。
+- `checklist_items_one_client_item_per_checklist` index 已建立，用於穩定 upsert / mapping。
+- validation SQL 已由 Product Owner 人工確認：RLS、policies、functions、indexes、`admin_users(email, role, trip_id)` 皆符合要求。
+
+目前已確認：
+
+- 私人確認清單新增 / 勾選可同步到 `checklist_items`。
+- Supabase Table Editor 可看到 private item rows。
+- 共同檢查清單尚未同步到雲端，仍使用 Trip JSON seed + localStorage 勾選進度。
 
 ---
 
@@ -202,6 +218,7 @@ src/services/
 - otherInfoService.ts
 - checklistService.ts
 - privateChecklistService.ts
+- privateChecklistCloudService.ts
 
 src/hooks/
 
@@ -212,6 +229,7 @@ src/hooks/
 src/components/
 
 - ChecklistPage.tsx
+- PrivateChecklistPage.tsx
 - OtherInfoPage.tsx
 
 src/constants/
@@ -236,26 +254,18 @@ npm.cmd run build
 
 建議流程：
 
-1. 瀏覽器手測其他資訊：
-   - 左側是否出現「其他資訊」
-   - 自由行 / 跟團切換後資料是否各自正確
-   - folder chips 是否換行整齊
-   - 新增、編輯、刪除後 localStorage 是否正確保留
-   - 編輯 / 刪除 seed item 後是否正確覆蓋預設資料
-   - `http` / `https` URL 是否可點擊並開新分頁
-   - 原本文字頁是否仍維持 Text Page 呈現
-
-2. 瀏覽器手測 Checklist：
-   - 勾選項目後重新整理是否保留
-   - 自由行 / 跟團切換後是否各自保留
-   - 勾選進度是否正確
-   - 若 trip seed item 變動，已不存在的 checked id 是否不影響進度
-
-3. 下一步建議：
-   - 先暫停新增功能，優先定案權限模型
-   - 依目前功能權限矩陣調整 permission.ts
-   - 將畫面顯示與操作統一改由權限控制
-   - 依共同 / 私人檢查清單權限矩陣設計資料模型
-   - 將 permission.ts 的 checklist 權限調整為 guest / user / trip_editor / super_admin
-   - 再決定是否提供 App 內新增 / 編輯 / 刪除檢查清單項目
-   - 評估檢查清單是否需要雲端同步 / 待同步佇列
+1. 新對話先接「共同檢查清單最小雲端同步」。
+2. 共同清單同步建議範圍：
+   - App 第一次進共同清單時，若 Supabase 沒有 `scope = shared` checklist，就用 Trip JSON `checklistData` 建立 shared checklist rows。
+   - 之後共同清單優先讀雲端資料。
+   - `guest` / `user` 可見但不可勾選。
+   - `trip_editor` / `super_admin` 可勾選並同步 `is_checked`。
+   - 暫時不做 App 內新增、編輯、刪除共同項目。
+3. 暫緩項目：
+   - Checklist Pending Queue。
+   - Conflict Resolution。
+   - 共同清單 item 管理。
+   - 其他資訊雲端同步。
+4. 下一輪交付前執行：
+   - `npm run lint`
+   - `npm run build`

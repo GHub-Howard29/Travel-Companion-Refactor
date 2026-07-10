@@ -77,6 +77,7 @@
 - 其他資訊已支援新增、編輯、刪除與 URL 超連結顯示
 - 檢查清單模組已完成第一階段拆分
 - 檢查清單勾選狀態已支援依旅程區分的 localStorage 持久化
+- 私人確認清單已完成最小雲端同步
 - 已建立目前功能權限矩陣草案
 
 目前開始：
@@ -149,9 +150,14 @@ Expense Module
 - [x] 確認 trip_editor 不可查看其他成員私人檢查清單
 - [ ] 評估共同檢查清單 App 內新增 / 編輯 / 刪除項目
 - [x] 設計 Supabase checklist tables / RLS
-- [ ] 在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`
-- [ ] 在 Supabase SQL Editor 執行 `docs/sql/002_checklist_cloud_validation.sql`
-- [ ] 設計私人檢查清單雲端同步
+- [x] 在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`
+- [x] 在 Supabase SQL Editor 執行 `docs/sql/002_checklist_cloud_validation.sql`
+- [x] 設計私人檢查清單雲端同步
+- [x] 實作私人檢查清單最小雲端同步
+- [ ] 實作共同檢查清單最小雲端同步
+- [ ] 將 Trip JSON `checklistData` 初始化為 Supabase shared checklist rows
+- [ ] 共同檢查清單改為優先讀取 Supabase shared checklist
+- [ ] 共同檢查清單勾選狀態同步 Supabase
 - [x] 補上共同檢查清單權限過濾
 
 ---

@@ -7,9 +7,9 @@
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新 commit：`1fab2de 更新工作交接事項`
+- 最新已知 commit：`1fab2de 更新工作交接事項`
 - 前一個功能 commit：`a748e82 落地檢查清單權限與私人清單本機版`
-- 目前工作樹在 2026-07-10 檢查時是乾淨的。
+- 目前工作樹已有私人清單雲端同步與文件整理變更，尚未 commit。
 - 尚未確認是否已 push 到遠端。
 - commit message 規則：使用者已要求「中文 commit」，後續 Codex 建立 commit 時一律使用繁體中文。
 
@@ -27,10 +27,20 @@ V3-1 目前已完成：
 - 私人確認清單本機版已落地：
   - 左上角功能選單中，位於共同檢查清單下方。
   - 未登入使用者不顯示私人確認清單入口。
-  - 使用 Supabase Auth 的 `session.user.id` 作為 `userId`。
-  - localStorage ownership 為 `userId + tripId`。
+  - localStorage ownership 為 `userEmail + tripId`。
   - 支援新增、編輯、刪除、勾選與進度顯示。
-- Supabase checklist tables / RLS 已設計成 SQL 檔，但尚未執行到遠端 Supabase。
+- 私人確認清單已完成最小雲端同步：
+  - `trip_editor` / `super_admin` 可同步自己的私人清單。
+  - 使用 `owner_user_id = auth.uid()` 限制雲端 ownership。
+  - 使用 `checklist_items.client_item_id` 對應本機 `private_...` item id。
+  - UI 顯示同步中、已同步、同步失敗狀態。
+- Supabase checklist tables / RLS 已執行並由 Product Owner 人工確認：
+  - RLS enabled。
+  - policies 已建立。
+  - helper functions 已建立。
+  - indexes 包含 `checklist_items_one_client_item_per_checklist`。
+  - `admin_users` 有 `email`、`role`、`trip_id`。
+- 共同檢查清單尚未雲端同步，仍使用 Trip JSON seed + localStorage 勾選進度。
 - `npm run lint` 通過。
 - `npm run build` 通過，僅剩 Vite chunk size warning。
 
@@ -59,6 +69,7 @@ V3-1 目前已完成：
   - 接上 `PrivateChecklistPage`。
   - 以 `currentScreenType` 支援 synthetic screen。
   - 登出時清除 `userId`。
+  - 登出或未登入狀態停在私人清單 / 記帳本時會導回行程頁。
 - `src/components/layout/AppSidebar.tsx`
   - 登入時在共同檢查清單下方動態插入「私人確認清單」。
   - 未登入不顯示私人確認清單。
@@ -66,14 +77,20 @@ V3-1 目前已完成：
   - 共同檢查清單可見 / 可勾選權限接進 UI。
 - `src/components/PrivateChecklistPage.tsx`
   - 新增私人確認清單本機 UI。
+  - 顯示私人清單雲端同步狀態。
 - `src/types/checklist.ts`
   - 新增 `PrivateChecklist` / `PrivateChecklistItem`。
 - `src/storage/privateChecklistStorage.ts`
-  - 新增 `userId + tripId` localStorage storage layer。
+  - 新增 `userEmail + tripId` localStorage storage layer。
 - `src/services/privateChecklistService.ts`
   - 新增私人確認清單本機 service。
+- `src/services/privateChecklistCloudService.ts`
+  - 新增私人確認清單最小雲端同步 service。
+  - 負責建立 / 讀取 private checklist cloud row。
+  - 負責以 `client_item_id` 對應本機 item id 並推送新增、勾選、編輯、刪除。
 - `src/hooks/usePrivateChecklistState.ts`
   - 新增私人確認清單 hook。
+  - 接上進頁同步與本機操作後推送雲端。
 - `src/components/OtherInfoPage.tsx`
   - 移除 effect 內同步 setState 的 lint 問題，改由 `App.tsx` 以 `key={selectedTripId}` 重掛載。
 - `src/hooks/useExpenseBook.ts`
@@ -84,10 +101,11 @@ V3-1 目前已完成：
 - `docs/sql/001_checklist_cloud_schema.sql`
   - 新增 Supabase checklist cloud schema / RLS 設計。
   - 建立 `checklists`、`checklist_items`。
+  - `checklist_items` 包含 `client_item_id` 欄位。
   - 以既有 `admin_users(email, role, trip_id)` 作為權限來源。
   - 私人清單 RLS 強制 `owner_user_id = auth.uid()`。
   - `super_admin` / `trip_editor` 不可讀取其他使用者私人確認清單。
-  - 目前尚未執行到遠端 Supabase。
+  - 已執行到遠端 Supabase。
 - `docs/sql/002_checklist_cloud_validation.sql`
   - Supabase SQL Editor 執行 schema 後的只讀驗證腳本。
 - `docs/001 V3-1_Handoff.md`
@@ -100,15 +118,13 @@ V3-1 目前已完成：
 
 最高優先：
 
-- 尚未在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`。
-- 尚未執行 `docs/sql/002_checklist_cloud_validation.sql` 驗證 schema 結果。
 - 尚未實作共同檢查清單雲端同步。
-- 尚未實作私人確認清單雲端同步。
+- 尚未將 Trip JSON `checklistData` 初始化為 Supabase `scope = shared` rows。
 - 尚未設計 / 實作 checklist sync policy：
   - localStorage 與 Supabase 如何合併。
   - offline pending queue。
   - last-write-wins 或其他 conflict resolution。
-  - seed `checklistData` 如何搬到 shared checklist cloud rows。
+  - seed `checklistData` 如何搬到 shared checklist cloud rows 並避免重複建立。
 
 仍待評估：
 
@@ -133,6 +149,7 @@ Checklist / Permission：
 - `src/hooks/usePrivateChecklistState.ts`
 - `src/services/checklistService.ts`
 - `src/services/privateChecklistService.ts`
+- `src/services/privateChecklistCloudService.ts`
 - `src/storage/checklistStorage.ts`
 - `src/storage/privateChecklistStorage.ts`
 - `src/types/checklist.ts`
@@ -159,48 +176,15 @@ Other Info / lint related：
 
 ### 下一步建議
 
-1. 先確認目前 commit 是否要 push：
-
-   ```bash
-   git push
-   ```
-
-   若 upstream 尚未設定：
-
-   ```bash
-   git push -u origin develop
-   ```
-
-2. 在 Supabase SQL Editor 執行前，先人工審閱：
-
-   ```text
-   docs/sql/001_checklist_cloud_schema.sql
-   ```
-
-3. 執行 SQL 後，先跑只讀驗證腳本：
-
-   ```text
-   docs/sql/002_checklist_cloud_validation.sql
-   ```
-
-4. 再用 Supabase Table Editor / SQL 驗證：
-
-   - `checklists` / `checklist_items` 是否建立成功。
-   - RLS 是否已啟用。
-   - guest 是否只能讀 shared。
-   - `trip_editor` 是否只能編輯所屬 trip 的 shared checklist。
-   - `super_admin` 是否可編輯 shared checklist。
-   - private checklist 是否只有 `owner_user_id = auth.uid()` 可讀寫。
-
-5. 再接前端雲端同步：
-
-   - 建立 cloud service/repository。
-   - 將 `canSyncPrivateChecklist` 作為雲端同步開關。
-   - `user` 保持本機私人清單。
-   - `trip_editor` / `super_admin` 同步自己的私人清單。
-   - 不要讓任何角色讀取別人的私人清單。
-
-6. 每次交付前執行：
+1. 新對話直接接「共同檢查清單最小雲端同步」。
+2. 建議範圍：
+   - 新增 shared checklist cloud service。
+   - 若 Supabase 無 `scope = shared` checklist，使用 Trip JSON `checklistData` seed 初始化。
+   - 共同清單頁面優先讀 Supabase shared checklist。
+   - `guest` / `user` 可見不可勾選。
+   - `trip_editor` / `super_admin` 可勾選並同步 `is_checked`。
+   - 暫時不做共同項目新增、編輯、刪除。
+3. 每次交付前執行：
 
    ```bash
    npm run lint

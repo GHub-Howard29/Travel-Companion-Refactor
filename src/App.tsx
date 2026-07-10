@@ -364,6 +364,7 @@ export default function App() {
               <PrivateChecklistPage
                 tripId={selectedTripId}
                 userEmail={userEmail}
+                supabase={supabase}
                 canViewPrivateChecklist={permission.canViewPrivateChecklist}
                 canEditPrivateChecklist={permission.canEditPrivateChecklist}
                 canTogglePrivateChecklist={permission.canTogglePrivateChecklist}

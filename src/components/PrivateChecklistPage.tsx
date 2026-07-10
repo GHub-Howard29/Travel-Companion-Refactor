@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
 import { usePrivateChecklistState } from "../hooks/usePrivateChecklistState";
@@ -6,6 +7,7 @@ import { usePrivateChecklistState } from "../hooks/usePrivateChecklistState";
 interface PrivateChecklistPageProps {
   tripId: string;
   userEmail: string | null;
+  supabase: SupabaseClient;
   canViewPrivateChecklist: boolean;
   canEditPrivateChecklist: boolean;
   canTogglePrivateChecklist: boolean;
@@ -15,13 +17,26 @@ interface PrivateChecklistPageProps {
 export const PrivateChecklistPage = ({
   tripId,
   userEmail,
+  supabase,
   canViewPrivateChecklist,
   canEditPrivateChecklist,
   canTogglePrivateChecklist,
   canSyncPrivateChecklist,
 }: PrivateChecklistPageProps) => {
-  const { items, addItem, toggleItem, renameItem, removeItem } =
-    usePrivateChecklistState(tripId, userEmail);
+  const {
+    items,
+    syncStatus,
+    syncError,
+    addItem,
+    toggleItem,
+    renameItem,
+    removeItem,
+  } = usePrivateChecklistState(
+    tripId,
+    userEmail,
+    supabase,
+    canSyncPrivateChecklist,
+  );
   const [newLabel, setNewLabel] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
@@ -98,9 +113,11 @@ export const PrivateChecklistPage = ({
           />
         </div>
         <p className="mt-3 text-xs font-medium text-slate-500">
-          {canSyncPrivateChecklist
-            ? "雲端同步權限已開啟；目前資料先保存於本機，待雲端同步資料表接上。"
-            : "目前資料僅保存於此裝置。"}
+          {!canSyncPrivateChecklist && "目前資料僅保存於此裝置。"}
+          {canSyncPrivateChecklist && syncStatus === "syncing" && "正在同步雲端..."}
+          {canSyncPrivateChecklist && syncStatus === "synced" && "已同步到雲端。"}
+          {canSyncPrivateChecklist && syncStatus === "error" && syncError}
+          {canSyncPrivateChecklist && syncStatus === "local" && "目前資料先保存於本機。"}
         </p>
       </div>
 
