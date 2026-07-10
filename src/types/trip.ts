@@ -3,12 +3,22 @@ export interface TripMeta {
   id: string;
   title: string;
   departureDate: string; // 格式統一為 YYYY-MM-DD
-  detailPath: string;
+  detailPath?: string;
   participants: string[];
   currencyConfig: {
     code: string;
     symbol: string;
   };
+}
+
+export interface TripEditorInput {
+  title: string;
+  departureDate: string;
+  dayCount: number;
+  participants: string[];
+  editorEmails: string[];
+  currencyCode: string;
+  currencySymbol: string;
 }
 
 // 2. 對應詳細行程中的單一時間軸項目

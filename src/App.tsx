@@ -1,5 +1,5 @@
 // React 核心
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Icon 圖示
 import { MapPin, ExternalLink } from "lucide-react";
@@ -8,7 +8,7 @@ import { MapPin, ExternalLink } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 // 旅程型別
-import type { SidebarItemConfig, TripMeta } from "./types";
+import type { SidebarItemConfig, TripEditorInput, TripMeta } from "./types";
 
 // 導航工具
 import { handleNavigate } from "./utils/navigationUtils";
@@ -20,6 +20,7 @@ import ExpenseScreen from "./components/expense/ExpenseScreen";
 import { ChecklistPage } from "./components/ChecklistPage";
 import { PrivateChecklistPage } from "./components/PrivateChecklistPage";
 import { OtherInfoPage } from "./components/OtherInfoPage";
+import { TripEditorModal } from "./components/TripEditorModal";
 import useExpenseBook from "./hooks/useExpenseBook";
 import useTripWorkspace from "./hooks/useTripWorkspace";
 import { AppContext } from "./app/context/AppContext";
@@ -62,7 +63,12 @@ export default function App() {
     isAssignedTrip,
     role,
     permission,
+    createTrip,
+    updateTrip,
+    currentTripEditorEmails,
   } = useTripWorkspace({ supabase });
+  const [tripEditorMode, setTripEditorMode] = useState<"create" | "edit">("create");
+  const [isTripEditorOpen, setIsTripEditorOpen] = useState(false);
 
   const {
     newTitle,
@@ -204,6 +210,29 @@ export default function App() {
 
     return currentTrip?.sidebarConfig.find((s) => s.id === currentScreen)?.type;
   };
+  const openCreateTrip = () => {
+    setTripEditorMode("create");
+    setIsTripEditorOpen(true);
+  };
+  const openEditTrip = () => {
+    setTripEditorMode("edit");
+    setIsTripEditorOpen(true);
+  };
+  const handleTripEditorSubmit = async (input: TripEditorInput) => {
+    setIsLoading(true);
+    const canManageEditors = adminProfile?.role === "super_admin";
+    const nextInput = canManageEditors
+      ? input
+      : { ...input, editorEmails: currentTripEditorEmails };
+
+    if (tripEditorMode === "create") {
+      await createTrip(nextInput, canManageEditors);
+    } else {
+      await updateTrip(nextInput, canManageEditors);
+    }
+    setIsTripEditorOpen(false);
+    setIsMenuOpen(false);
+  };
   const currentScreenType = getCurrentScreenType();
 
   useEffect(() => {
@@ -246,6 +275,10 @@ export default function App() {
         hasEditPermission={hasEditPermission}
         adminProfile={adminProfile}
         currentScreen={currentScreen}
+        canCreateTrip={adminProfile?.role === "super_admin"}
+        canEditCurrentTrip={hasEditPermission}
+        onCreateTrip={openCreateTrip}
+        onEditTrip={openEditTrip}
         onTripSelect={(tripId) => {
           const nextTrip = tripOptions.find((trip) => trip.id === tripId);
           if (!nextTrip) return;
@@ -260,6 +293,20 @@ export default function App() {
         onGoogleLogin={handleGoogleLogin}
         onScreenSelect={handleScreenSelect}
       />
+
+      {isTripEditorOpen && (
+        <TripEditorModal
+          key={`${tripEditorMode}-${selectedTripId || "new"}`}
+          mode={tripEditorMode}
+          trip={tripEditorMode === "edit" ? selectedTripMeta ?? null : null}
+          tripDetail={tripEditorMode === "edit" ? currentTrip : null}
+          editorEmails={tripEditorMode === "edit" ? currentTripEditorEmails : []}
+          canManageEditors={adminProfile?.role === "super_admin"}
+          isOpen={isTripEditorOpen}
+          onClose={() => setIsTripEditorOpen(false)}
+          onSubmit={handleTripEditorSubmit}
+        />
+      )}
 
       <AppHeader
         currentTrip={currentTrip}

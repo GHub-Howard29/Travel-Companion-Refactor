@@ -6,6 +6,8 @@ import {
   Home,
   LogIn,
   LogOut,
+  Pencil,
+  Plus,
   Wallet,
   X,
 } from "lucide-react";
@@ -27,6 +29,10 @@ interface AppSidebarProps {
   hasEditPermission: boolean;
   adminProfile: AdminUser | null;
   currentScreen: string;
+  canCreateTrip: boolean;
+  canEditCurrentTrip: boolean;
+  onCreateTrip: () => void;
+  onEditTrip: () => void;
   onTripSelect: (tripId: string) => void;
   onLogout: () => Promise<void>;
   onGoogleLogin: () => Promise<void>;
@@ -60,6 +66,10 @@ export default function AppSidebar({
   hasEditPermission,
   adminProfile,
   currentScreen,
+  canCreateTrip,
+  canEditCurrentTrip,
+  onCreateTrip,
+  onEditTrip,
   onTripSelect,
   onLogout,
   onGoogleLogin,
@@ -123,6 +133,33 @@ export default function AppSidebar({
                 </option>
               ))}
             </select>
+            {(canCreateTrip || canEditCurrentTrip) && (
+              <div
+                className={`mt-2 grid gap-2 ${
+                  canCreateTrip && canEditCurrentTrip ? "grid-cols-2" : "grid-cols-1"
+                }`}
+              >
+                {canCreateTrip && (
+                <button
+                  type="button"
+                  onClick={onCreateTrip}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                >
+                  <Plus size={14} /> 新增旅程
+                </button>
+                )}
+                {canEditCurrentTrip && (
+                <button
+                  type="button"
+                  onClick={onEditTrip}
+                  disabled={!currentTrip}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  <Pencil size={14} /> 編輯旅程
+                </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

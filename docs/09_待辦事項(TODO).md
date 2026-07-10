@@ -79,6 +79,13 @@
 - 檢查清單勾選狀態已支援依旅程區分的 localStorage 持久化
 - 私人確認清單已完成最小雲端同步
 - 共同檢查清單已完成最小雲端同步
+- Trip 管理第一階段大架構已完成：
+  - App 內新增 / 編輯旅程基本資料
+  - JSON seed + Supabase trips + localStorage fallback 合併
+  - `super_admin` 新增旅程
+  - `trip_editor` 編輯被指派旅程
+  - 可編輯者 Email 由 `admin_users` 管理
+  - 已建立 Trip Cloud schema / validation SQL
 - 已建立目前功能權限矩陣草案
 
 目前開始：
@@ -165,6 +172,34 @@ Expense Module
 ---
 
 ## 第五階段
+
+已完成第一階段：
+
+Trip 管理
+
+- [x] App 內新增旅程基本資料
+- [x] App 內編輯旅程基本資料
+- [x] 旅程名稱顯示於旅程資料庫選單
+- [x] 出發日期顯示於首頁標題並參與排序
+- [x] 天數產生 Day 1 ~ Day N
+- [x] 參與者作為帳本付款人來源
+- [x] 預設幣別作為帳本參考
+- [x] 可編輯者 Email 同步 `admin_users`
+- [x] `super_admin` 可新增旅程
+- [x] `trip_editor` 可編輯被指派旅程
+- [x] 旅程清單合併 JSON seed / Supabase trips / localStorage fallback
+- [x] 設計 Supabase trips table / RLS
+- [x] 建立 `docs/sql/003_trip_cloud_schema.sql`
+- [x] 建立 `docs/sql/004_trip_cloud_validation.sql`
+- [ ] 在 Supabase SQL Editor 執行 `docs/sql/003_trip_cloud_schema.sql`
+- [ ] 在 Supabase SQL Editor 執行 `docs/sql/004_trip_cloud_validation.sql`
+- [ ] 實機測試 `super_admin` 新增旅程
+- [ ] 實機測試 `trip_editor` 編輯被指派旅程
+- [ ] 實機測試 Guest 瀏覽旅程
+
+---
+
+## 第六階段
 
 已完成第一階段：
 

@@ -47,6 +47,13 @@ V3-1 目前已完成：
   - `admin_users` 有 `email`、`role`、`trip_id`。
 - `npm run lint` 通過。
 - `npm run build` 通過，僅剩 Vite chunk size warning。
+- Trip 管理第一階段大架構已完成：
+  - App 內新增 / 編輯旅程基本資料。
+  - 旅程清單改為 JSON seed + Supabase trips + localStorage fallback 合併。
+  - `super_admin` 可新增旅程。
+  - `trip_editor` 可編輯被指派旅程。
+  - 可編輯者 Email 由 `admin_users` 管理。
+  - Trip Cloud schema / validation SQL 已建立於 `docs/sql/003_trip_cloud_schema.sql`、`docs/sql/004_trip_cloud_validation.sql`，尚待 Product Owner 於 Supabase SQL Editor 執行。
 
 ### 本輪已完成修改
 
@@ -122,8 +129,10 @@ V3-1 目前已完成：
 
 最高優先：
 
-- 先同步更新交接 / TODO / Roadmap 文件，避免後續 thread 依照舊的共同清單狀態前進。
-- 接續 Other Info / Reference 權限過濾與雲端同步設計。
+- 在 Supabase SQL Editor 執行 `docs/sql/003_trip_cloud_schema.sql`。
+- 執行 `docs/sql/004_trip_cloud_validation.sql` 並人工確認結果。
+- 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程、Guest 瀏覽旅程。
+- Trip Cloud 驗證完成後，再接續 Other Info / Reference 權限過濾與雲端同步設計。
 
 仍待評估：
 
@@ -165,6 +174,8 @@ Supabase / docs：
 
 - `docs/sql/001_checklist_cloud_schema.sql`
 - `docs/sql/002_checklist_cloud_validation.sql`
+- `docs/sql/003_trip_cloud_schema.sql`
+- `docs/sql/004_trip_cloud_validation.sql`
 - `docs/001 V3-1_Handoff.md`
 - `docs/002 V3-1_Architecture_Decisions.md`
 - `docs/04_資料庫設計.md`
@@ -174,6 +185,13 @@ Other Info / lint related：
 
 - `src/components/OtherInfoPage.tsx`
 - `src/hooks/useExpenseBook.ts`
+
+Trip Management：
+
+- `src/components/TripEditorModal.tsx`
+- `src/services/tripRepository.ts`
+- `src/services/tripCloudService.ts`
+- `src/storage/tripStorage.ts`
 
 ### 下一步建議
 
