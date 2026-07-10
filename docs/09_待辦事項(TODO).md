@@ -150,6 +150,7 @@ Expense Module
 - [ ] 評估共同檢查清單 App 內新增 / 編輯 / 刪除項目
 - [x] 設計 Supabase checklist tables / RLS
 - [ ] 在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`
+- [ ] 在 Supabase SQL Editor 執行 `docs/sql/002_checklist_cloud_validation.sql`
 - [ ] 設計私人檢查清單雲端同步
 - [x] 補上共同檢查清單權限過濾
 

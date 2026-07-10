@@ -1,14 +1,16 @@
 # Travel Companion Agent Guide
 
-## 最新交接摘要（2026-07-09）
+## 最新交接摘要（2026-07-10）
 
 本節是給另一台電腦 / 新 Codex thread 接續用的最新狀態。進入專案後請先讀本節，再依任務查閱 `docs/001 V3-1_Handoff.md`、`docs/002 V3-1_Architecture_Decisions.md`、`docs/04_資料庫設計.md`、`docs/09_待辦事項(TODO).md`。
 
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新 commit：`a748e82 落地檢查清單權限與私人清單本機版`
-- 這個 commit 已在本機完成，尚未確認是否已 push 到遠端。
+- 最新 commit：`1fab2de 更新工作交接事項`
+- 前一個功能 commit：`a748e82 落地檢查清單權限與私人清單本機版`
+- 目前工作樹在 2026-07-10 檢查時是乾淨的。
+- 尚未確認是否已 push 到遠端。
 - commit message 規則：使用者已要求「中文 commit」，後續 Codex 建立 commit 時一律使用繁體中文。
 
 ### 目前開發進度
@@ -86,6 +88,8 @@ V3-1 目前已完成：
   - 私人清單 RLS 強制 `owner_user_id = auth.uid()`。
   - `super_admin` / `trip_editor` 不可讀取其他使用者私人確認清單。
   - 目前尚未執行到遠端 Supabase。
+- `docs/sql/002_checklist_cloud_validation.sql`
+  - Supabase SQL Editor 執行 schema 後的只讀驗證腳本。
 - `docs/001 V3-1_Handoff.md`
 - `docs/002 V3-1_Architecture_Decisions.md`
 - `docs/04_資料庫設計.md`
@@ -97,6 +101,7 @@ V3-1 目前已完成：
 最高優先：
 
 - 尚未在 Supabase SQL Editor 執行 `docs/sql/001_checklist_cloud_schema.sql`。
+- 尚未執行 `docs/sql/002_checklist_cloud_validation.sql` 驗證 schema 結果。
 - 尚未實作共同檢查清單雲端同步。
 - 尚未實作私人確認清單雲端同步。
 - 尚未設計 / 實作 checklist sync policy：
@@ -141,6 +146,7 @@ App / navigation：
 Supabase / docs：
 
 - `docs/sql/001_checklist_cloud_schema.sql`
+- `docs/sql/002_checklist_cloud_validation.sql`
 - `docs/001 V3-1_Handoff.md`
 - `docs/002 V3-1_Architecture_Decisions.md`
 - `docs/04_資料庫設計.md`
@@ -171,7 +177,13 @@ Other Info / lint related：
    docs/sql/001_checklist_cloud_schema.sql
    ```
 
-3. 執行 SQL 後，用 Supabase Table Editor / SQL 驗證：
+3. 執行 SQL 後，先跑只讀驗證腳本：
+
+   ```text
+   docs/sql/002_checklist_cloud_validation.sql
+   ```
+
+4. 再用 Supabase Table Editor / SQL 驗證：
 
    - `checklists` / `checklist_items` 是否建立成功。
    - RLS 是否已啟用。
@@ -180,7 +192,7 @@ Other Info / lint related：
    - `super_admin` 是否可編輯 shared checklist。
    - private checklist 是否只有 `owner_user_id = auth.uid()` 可讀寫。
 
-4. 再接前端雲端同步：
+5. 再接前端雲端同步：
 
    - 建立 cloud service/repository。
    - 將 `canSyncPrivateChecklist` 作為雲端同步開關。
@@ -188,7 +200,7 @@ Other Info / lint related：
    - `trip_editor` / `super_admin` 同步自己的私人清單。
    - 不要讓任何角色讀取別人的私人清單。
 
-5. 每次交付前執行：
+6. 每次交付前執行：
 
    ```bash
    npm run lint
@@ -200,6 +212,8 @@ Other Info / lint related：
 - 當使用者要求由 Codex 建立 Git commit 時，commit message 一律使用繁體中文。
 - commit message 應簡潔描述實際變更，例如：`新增其他資訊本機管理`、`修正共同檢查清單名稱`。
 - 不要使用英文 commit message，除非使用者在該次請求中明確指定。
+- 當完成一段適合或需要提交的工作時，Codex 要主動提醒使用者目前適合 commit，並提供可直接使用的繁體中文 commit message 建議。
+- 若使用者尚未要求 commit，Codex 只提醒並提供建議訊息，不主動建立 commit。
 本文件是給 AI agent / coding assistant 進入本專案時的工作入口。請先讀本文件，再依任務需要查閱 `docs/` 內的詳細文件。
 
 ## 專案定位
@@ -443,6 +457,7 @@ AI agent 負責：
 
 - 不要自動 commit，除非使用者要求。
 - commit 前必須先 build。
+- 工作完成且適合 commit 時，要主動提醒使用者，並提供繁體中文 commit message 建議。
 - 若工作樹已有使用者改動，不要 revert。
 - 不要覆蓋 `.env` 或任何 secrets。
 - 不要提交 `dist/`，除非使用者明確要求部署流程。
