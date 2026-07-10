@@ -8,6 +8,16 @@ const createPrivateChecklistItemId = (): string => {
   return `private_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 };
 
+const getScopedPrivateChecklistItems = (
+  tripId: string,
+  userEmail: string,
+  currentItems: PrivateChecklistItem[],
+): PrivateChecklistItem[] => {
+  return currentItems.filter(
+    (item) => item.tripId === tripId && item.userEmail === userEmail,
+  );
+};
+
 export const getPrivateChecklist = (
   tripId: string,
   userEmail: string,
@@ -22,11 +32,16 @@ export const createPrivateChecklistItem = (
   currentItems: PrivateChecklistItem[],
 ): PrivateChecklist => {
   const now = new Date().toISOString();
+  const scopedItems = getScopedPrivateChecklistItems(
+    tripId,
+    userEmail,
+    currentItems,
+  );
   const nextChecklist: PrivateChecklist = {
     tripId,
     userEmail,
     items: [
-      ...currentItems,
+      ...scopedItems,
       {
         id: createPrivateChecklistItemId(),
         tripId,
@@ -53,11 +68,16 @@ export const updatePrivateChecklistItem = (
   currentItems: PrivateChecklistItem[],
 ): PrivateChecklist => {
   const now = new Date().toISOString();
+  const scopedItems = getScopedPrivateChecklistItems(
+    tripId,
+    userEmail,
+    currentItems,
+  );
   const nextChecklist: PrivateChecklist = {
     tripId,
     userEmail,
-    items: currentItems.map((item) =>
-      item.id === itemId && item.tripId === tripId && item.userEmail === userEmail
+    items: scopedItems.map((item) =>
+      item.id === itemId
         ? {
             ...item,
             ...patch,
@@ -79,17 +99,15 @@ export const deletePrivateChecklistItem = (
   itemId: string,
   currentItems: PrivateChecklistItem[],
 ): PrivateChecklist => {
+  const scopedItems = getScopedPrivateChecklistItems(
+    tripId,
+    userEmail,
+    currentItems,
+  );
   const nextChecklist: PrivateChecklist = {
     tripId,
     userEmail,
-    items: currentItems.filter(
-      (item) =>
-        !(
-          item.id === itemId &&
-          item.tripId === tripId &&
-          item.userEmail === userEmail
-        ),
-    ),
+    items: scopedItems.filter((item) => item.id !== itemId),
     updatedAt: new Date().toISOString(),
   };
 

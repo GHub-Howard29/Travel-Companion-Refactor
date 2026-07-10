@@ -36,100 +36,88 @@ export const usePrivateChecklistState = (
       return;
     }
 
-    setItemsByScope((currentItemsByScope) => {
-      const currentItems =
-        currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, ownerEmail).items;
-      const nextChecklist = createPrivateChecklistItem(
-        tripId,
-        ownerEmail,
-        label,
-        currentItems,
-      );
+    const nextChecklist = createPrivateChecklistItem(
+      tripId,
+      ownerEmail,
+      label,
+      items,
+    );
 
+    setItemsByScope((currentItemsByScope) => {
       return {
         ...currentItemsByScope,
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
+  }, [canUsePrivateChecklist, items, ownerEmail, scopeKey, tripId]);
 
   const toggleItem = useCallback((itemId: string) => {
     if (!canUsePrivateChecklist) {
       return;
     }
 
+    const targetItem = items.find((item) => item.id === itemId);
+
+    if (!targetItem) {
+      return;
+    }
+
+    const nextChecklist = updatePrivateChecklistItem(
+      tripId,
+      ownerEmail,
+      itemId,
+      { isChecked: !targetItem.isChecked },
+      items,
+    );
+
     setItemsByScope((currentItemsByScope) => {
-      const currentItems =
-        currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, ownerEmail).items;
-      const targetItem = currentItems.find((item) => item.id === itemId);
-
-      if (!targetItem) {
-        return currentItemsByScope;
-      }
-
-      const nextChecklist = updatePrivateChecklistItem(
-        tripId,
-        ownerEmail,
-        itemId,
-        { isChecked: !targetItem.isChecked },
-        currentItems,
-      );
-
       return {
         ...currentItemsByScope,
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
+  }, [canUsePrivateChecklist, items, ownerEmail, scopeKey, tripId]);
 
   const renameItem = useCallback((itemId: string, label: string) => {
     if (!canUsePrivateChecklist) {
       return;
     }
 
-    setItemsByScope((currentItemsByScope) => {
-      const currentItems =
-        currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, ownerEmail).items;
-      const nextChecklist = updatePrivateChecklistItem(
-        tripId,
-        ownerEmail,
-        itemId,
-        { label },
-        currentItems,
-      );
+    const nextChecklist = updatePrivateChecklistItem(
+      tripId,
+      ownerEmail,
+      itemId,
+      { label },
+      items,
+    );
 
+    setItemsByScope((currentItemsByScope) => {
       return {
         ...currentItemsByScope,
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
+  }, [canUsePrivateChecklist, items, ownerEmail, scopeKey, tripId]);
 
   const removeItem = useCallback((itemId: string) => {
     if (!canUsePrivateChecklist) {
       return;
     }
 
-    setItemsByScope((currentItemsByScope) => {
-      const currentItems =
-        currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, ownerEmail).items;
-      const nextChecklist = deletePrivateChecklistItem(
-        tripId,
-        ownerEmail,
-        itemId,
-        currentItems,
-      );
+    const nextChecklist = deletePrivateChecklistItem(
+      tripId,
+      ownerEmail,
+      itemId,
+      items,
+    );
 
+    setItemsByScope((currentItemsByScope) => {
       return {
         ...currentItemsByScope,
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
+  }, [canUsePrivateChecklist, items, ownerEmail, scopeKey, tripId]);
 
   return {
     items,

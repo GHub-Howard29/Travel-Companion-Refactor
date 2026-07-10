@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
 import { usePrivateChecklistState } from "../hooks/usePrivateChecklistState";
@@ -68,6 +68,18 @@ export const PrivateChecklistPage = ({
 
     renameItem(editingItemId, label);
     cancelEdit();
+  };
+
+  const handleEditKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveEdit();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEdit();
+    }
   };
 
   return (
@@ -149,6 +161,7 @@ export const PrivateChecklistPage = ({
                   <input
                     value={editingLabel}
                     onChange={(event) => setEditingLabel(event.target.value)}
+                    onKeyDown={handleEditKeyDown}
                     className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-rose-500"
                   />
                 ) : (
