@@ -78,6 +78,7 @@
 - 檢查清單模組已完成第一階段拆分
 - 檢查清單勾選狀態已支援依旅程區分的 localStorage 持久化
 - 私人確認清單已完成最小雲端同步
+- 共同檢查清單已完成最小雲端同步
 - 已建立目前功能權限矩陣草案
 
 目前開始：
@@ -154,10 +155,11 @@ Expense Module
 - [x] 在 Supabase SQL Editor 執行 `docs/sql/002_checklist_cloud_validation.sql`
 - [x] 設計私人檢查清單雲端同步
 - [x] 實作私人檢查清單最小雲端同步
-- [ ] 實作共同檢查清單最小雲端同步
-- [ ] 將 Trip JSON `checklistData` 初始化為 Supabase shared checklist rows
-- [ ] 共同檢查清單改為優先讀取 Supabase shared checklist
-- [ ] 共同檢查清單勾選狀態同步 Supabase
+- [x] 實作共同檢查清單最小雲端同步
+- [x] 將 Trip JSON `checklistData` 初始化為 Supabase shared checklist rows
+- [x] 共同檢查清單改為優先讀取 Supabase shared checklist
+- [x] 共同檢查清單勾選狀態同步 Supabase
+- [x] `guest` / `user` 查看共同檢查清單時顯示乾淨未勾選版本
 - [x] 補上共同檢查清單權限過濾
 
 ---
@@ -175,8 +177,10 @@ Expense Module
 - [x] 編輯 seed item 以 localStorage 覆蓋
 - [x] 刪除 seed item 寫入 `isDeleted` 標記
 - [x] `http` / `https` URL 自動轉為可點擊超連結
-- [ ] 雲端同步
 - [ ] 權限過濾
+- [ ] 設計 Other Info Supabase schema / RLS
+- [ ] 雲端同步
+- [ ] 多人協作
 
 ---
 
@@ -241,3 +245,15 @@ Foundation 為共同能力。
 旅行工具（Travel Tool）為產品功能。
 
 所有新功能皆應遵循《Travel Tool 設計規格》後，再開始實作。
+
+---
+
+# 十、協作語言規則
+
+Codex 使用專業術語時，必須附上對應本專案功能的解釋，避免只留下工程名詞。
+
+例如：
+
+- `RLS`：Supabase 資料列權限，用來限制誰能讀寫特定 Trip 或使用者資料。
+- `Pending Queue`：離線或同步失敗時暫存待上傳操作的佇列，用來避免使用者在 Travel Tool 裡新增或修改資料後遺失。
+- `Conflict Resolution`：當本機與雲端同一筆旅行資料都被修改時，決定保留哪一份或如何合併的規則。

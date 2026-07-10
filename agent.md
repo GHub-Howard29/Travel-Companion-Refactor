@@ -7,8 +7,8 @@
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新已知 commit：`1fab2de 更新工作交接事項`
-- 前一個功能 commit：`a748e82 落地檢查清單權限與私人清單本機版`
+- 最新已知 commit：`0532277 完成共同清單同步與提交規範更新`
+- 前一個功能 commit：`59ccc06 新增私人清單雲端同步並整理交接文件`
 - 目前工作樹可能有未提交變更；完成文件或程式修改並驗證通過後，Codex 應直接建立繁體中文 commit。
 - 尚未確認是否已 push 到遠端。
 - commit message 規則：使用者已要求「中文 commit」，後續 Codex 完成文件或程式修改後一律直接使用繁體中文 commit message 建立 commit，並回報實際使用的中文 commit message。
@@ -34,13 +34,17 @@ V3-1 目前已完成：
   - 使用 `owner_user_id = auth.uid()` 限制雲端 ownership。
   - 使用 `checklist_items.client_item_id` 對應本機 `private_...` item id。
   - UI 顯示同步中、已同步、同步失敗狀態。
+- 共同檢查清單已完成最小雲端同步：
+  - App 第一次進共同清單時，若 Supabase 沒有 `scope = shared` checklist，會用 Trip JSON `checklistData` 初始化。
+  - 共同清單優先讀 Supabase shared checklist。
+  - `trip_editor` / `super_admin` 可勾選並同步 `is_checked`。
+  - `guest` / `user` 可見不可勾選，且看到乾淨未勾選版本，方便自行對照準備。
 - Supabase checklist tables / RLS 已執行並由 Product Owner 人工確認：
   - RLS enabled。
   - policies 已建立。
   - helper functions 已建立。
   - indexes 包含 `checklist_items_one_client_item_per_checklist`。
   - `admin_users` 有 `email`、`role`、`trip_id`。
-- 共同檢查清單尚未雲端同步，仍使用 Trip JSON seed + localStorage 勾選進度。
 - `npm run lint` 通過。
 - `npm run build` 通過，僅剩 Vite chunk size warning。
 
@@ -118,17 +122,14 @@ V3-1 目前已完成：
 
 最高優先：
 
-- 尚未實作共同檢查清單雲端同步。
-- 尚未將 Trip JSON `checklistData` 初始化為 Supabase `scope = shared` rows。
-- 尚未設計 / 實作 checklist sync policy：
-  - localStorage 與 Supabase 如何合併。
-  - offline pending queue。
-  - last-write-wins 或其他 conflict resolution。
-  - seed `checklistData` 如何搬到 shared checklist cloud rows 並避免重複建立。
+- 先同步更新交接 / TODO / Roadmap 文件，避免後續 thread 依照舊的共同清單狀態前進。
+- 接續 Other Info / Reference 權限過濾與雲端同步設計。
 
 仍待評估：
 
 - 共同檢查清單是否要支援 App 內新增 / 編輯 / 刪除 item。
+- Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列。
+- Checklist Conflict Resolution：本機與雲端同一筆清單資料都被修改時的合併或取捨規則。
 - 是否要將 `admin_users` 中長期補上 `user_id uuid`。
   - 目前程式與 SQL 仍可沿用 `email + role + trip_id`，新增 `trip_editor` 只需維護 Supabase 表格，不需改程式。
   - 若未來 RLS 想更穩，可再補 `user_id`。
@@ -176,14 +177,12 @@ Other Info / lint related：
 
 ### 下一步建議
 
-1. 新對話直接接「共同檢查清單最小雲端同步」。
+1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
-   - 新增 shared checklist cloud service。
-   - 若 Supabase 無 `scope = shared` checklist，使用 Trip JSON `checklistData` seed 初始化。
-   - 共同清單頁面優先讀 Supabase shared checklist。
-   - `guest` / `user` 可見不可勾選。
-   - `trip_editor` / `super_admin` 可勾選並同步 `is_checked`。
-   - 暫時不做共同項目新增、編輯、刪除。
+   - 更新 `docs/10_新對話交接文件.md`、`docs/09_待辦事項(TODO).md`、`docs/02_產品開發路線圖.md`。
+   - 接 Other Info / Reference 權限過濾。
+   - 設計 Other Info Supabase schema / RLS。
+   - 實作 Other Info 最小雲端同步。
 3. 每次交付前執行：
 
    ```bash
@@ -198,6 +197,13 @@ Other Info / lint related：
 - 不要使用英文 commit message，除非使用者在該次請求中明確指定。
 - commit 完成後，Codex 必須回報「已使用中文 commit 訊息：`...` 完成提交」。
 - 若驗證失敗、仍有阻塞、或工作樹包含不應由 Codex 一併提交的使用者變更，先回報原因並暫停 commit。
+
+## Terminology Guidance
+
+- Codex 使用專業術語時，必須附上對應本專案功能的解釋。
+- 不要只寫 `RLS`、`Pending Queue`、`Conflict Resolution` 這類工程名詞；第一次出現時要補一句它在 Travel Companion 裡的用途。
+- 範例：`RLS` 是 Supabase 資料列權限，用來限制誰能讀寫特定 Trip 或使用者資料。
+- 範例：`Pending Queue` 是離線或同步失敗時暫存待上傳操作的佇列，用來避免使用者在 Checklist、Expense、Other Info 裡的修改遺失。
 本文件是給 AI agent / coding assistant 進入本專案時的工作入口。請先讀本文件，再依任務需要查閱 `docs/` 內的詳細文件。
 
 ## 專案定位

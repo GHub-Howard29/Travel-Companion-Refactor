@@ -317,7 +317,11 @@ Supabase checklists / checklist_items
 目前資料：
 
 - Trip JSON 的 `checklistData` 仍作為共同檢查清單 seed
-- 勾選狀態依 `tripId` 寫入 localStorage
+- 共同檢查清單已完成最小雲端同步
+- 共同檢查清單會將 Trip JSON seed 初始化為 Supabase shared checklist rows
+- `trip_editor` / `super_admin` 可同步共同清單勾選狀態
+- `guest` / `user` 查看共同清單時顯示乾淨未勾選版本
+- localStorage 保留作為 fallback
 - 私人確認清單依 `userEmail + tripId` 寫入 localStorage
 - 私人確認清單已完成最小雲端同步
 - 私人確認清單雲端 item 以 `client_item_id` 對應本機 `private_...` item id
@@ -330,9 +334,8 @@ V3-1 第一階段尚不提供：
 - 共同檢查清單 App 內新增檢查清單項目
 - 共同檢查清單 App 內編輯檢查清單項目
 - 共同檢查清單 App 內刪除檢查清單項目
-- 共同檢查清單雲端同步
-- Checklist Pending Queue
-- Checklist sync policy
+- Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列
+- Checklist Conflict Resolution：本機與雲端同一筆清單資料都被修改時的合併或取捨規則
 
 ---
 

@@ -298,6 +298,8 @@ Git Commit：
 
 Commit 完成後，Codex 必須回報實際使用的中文 Commit 訊息。
 
+專業術語第一次出現時，必須附上對應本專案功能的解釋。例如 `RLS` 要說明為 Supabase 資料列權限，用來限制誰能讀寫特定 Trip 或使用者資料。
+
 ---
 
 # 九、Build Rules

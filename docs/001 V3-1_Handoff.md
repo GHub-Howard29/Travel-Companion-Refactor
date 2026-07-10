@@ -58,6 +58,10 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 - 私人確認清單雲端同步只讀寫 `owner_user_id = auth.uid()` 的資料，不可讀取其他使用者私人清單
 - 私人確認清單雲端 item 使用 `client_item_id` 對應本機 `private_...` item id
 - 私人確認清單 UI 會顯示同步中、已同步、同步失敗等狀態
+- 共同檢查清單已完成最小雲端同步
+- 共同檢查清單會用 Trip JSON `checklistData` 初始化 Supabase shared checklist rows
+- `trip_editor` / `super_admin` 可同步共同檢查清單勾選狀態
+- `guest` / `user` 查看共同檢查清單時顯示乾淨未勾選版本，用於自行準備
 - 未登入使用者不顯示私人確認清單入口
 - 未登入狀態停留在私人確認清單或記帳本時，會自動導回行程頁
 - 重新整理後可保留已勾選項目
@@ -72,10 +76,9 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 尚未完成：
 
 - 共同檢查清單 App 內新增 / 編輯 / 刪除 item
-- 共同檢查清單雲端同步
-- 共同檢查清單 seed 初始化至 Supabase
-- Checklist sync policy 尚未接進前端
 - Checklist Pending Queue / Conflict Resolution 尚未實作
+- Other Info / Reference 權限過濾尚未完成
+- Other Info / Reference 雲端同步尚未完成
 
 權限定案：
 
@@ -186,7 +189,7 @@ OtherInfoService
 
 - 私人確認清單新增 / 勾選可同步到 `checklist_items`。
 - Supabase Table Editor 可看到 private item rows。
-- 共同檢查清單尚未同步到雲端，仍使用 Trip JSON seed + localStorage 勾選進度。
+- 共同檢查清單已可同步到 Supabase shared checklist。
 
 ---
 
@@ -254,18 +257,18 @@ npm.cmd run build
 
 建議流程：
 
-1. 新對話先接「共同檢查清單最小雲端同步」。
-2. 共同清單同步建議範圍：
-   - App 第一次進共同清單時，若 Supabase 沒有 `scope = shared` checklist，就用 Trip JSON `checklistData` 建立 shared checklist rows。
-   - 之後共同清單優先讀雲端資料。
-   - `guest` / `user` 可見但不可勾選。
-   - `trip_editor` / `super_admin` 可勾選並同步 `is_checked`。
-   - 暫時不做 App 內新增、編輯、刪除共同項目。
+1. 新對話先接「Other Info / Reference 權限過濾與雲端同步設計」。
+2. Other Info / Reference 建議範圍：
+   - 先定義權限矩陣。
+   - 落地 UI 權限過濾。
+   - 設計 Supabase schema / RLS。
+   - 實作最小雲端同步。
+   - 暫時不做完整 Pending Queue / Conflict Resolution。
 3. 暫緩項目：
-   - Checklist Pending Queue。
-   - Conflict Resolution。
+   - Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列。
+   - Conflict Resolution：本機與雲端同一筆資料都被修改時的合併或取捨規則。
    - 共同清單 item 管理。
-   - 其他資訊雲端同步。
+   - 新 Travel Tool。
 4. 下一輪交付前執行：
    - `npm run lint`
    - `npm run build`
