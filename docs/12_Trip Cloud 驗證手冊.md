@@ -106,7 +106,27 @@ docs/sql/004_trip_cloud_validation.sql
 
 ---
 
-# 五、App 實機測試
+# 五、自動化 Smoke Test 結果
+
+已完成：
+
+- 本機 Vite dev server 以正確 base path `/Travel-Companion/` 啟動。
+- `GET /Travel-Companion/` 回傳 `200`。
+- `GET /Travel-Companion/trips/list.json` 回傳 `200`。
+- `GET /Travel-Companion/trips/group-tour-2026-10.json` 回傳 `200`。
+- 使用前端 anon key 呼叫 Supabase REST：
+  - `GET /rest/v1/trips?select=id,title` 回傳 `200 []`。
+  - `GET /rest/v1/admin_users?select=email,role,trip_id` 回傳 `401`。
+
+以上代表：
+
+- Guest 可讀 `trips`。
+- Guest 不可讀 `admin_users`。
+- 目前 `trips` table 尚無 App 內新增旅程資料。
+
+---
+
+# 六、App 實機測試
 
 ## 1. Guest 瀏覽
 
@@ -208,7 +228,7 @@ docs/sql/004_trip_cloud_validation.sql
 
 ---
 
-# 六、常見問題
+# 七、常見問題
 
 ## 新增旅程只出現在本機，Supabase 沒有資料
 
@@ -257,7 +277,7 @@ docs/sql/004_trip_cloud_validation.sql
 
 ---
 
-# 七、完成標準
+# 八、完成標準
 
 Trip 管理第一階段可視為完成，需同時符合：
 
