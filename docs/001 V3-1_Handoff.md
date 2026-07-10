@@ -1,6 +1,6 @@
 # Travel Companion V3-1 Handoff
 
-更新日期：2026-07-09
+更新日期：2026-07-10
 
 ---
 
@@ -51,7 +51,7 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 
 - 「共同檢查清單」勾選狀態已依 `tripId` 寫入 localStorage
 - 「私人確認清單」已建立獨立功能選單入口，位於共同檢查清單下方
-- 私人確認清單已依 `userId + tripId` 寫入 localStorage
+- 私人確認清單已依 `userEmail + tripId` 寫入 localStorage
 - 私人確認清單支援新增、編輯、刪除、勾選與進度顯示
 - 未登入使用者不顯示私人確認清單入口
 - 重新整理後可保留已勾選項目
@@ -94,7 +94,7 @@ V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易
 已定案：
 
 - `trip_editor` 依 `tripId` 分別定義。
-- 私人檢查清單 ownership 使用 `userId + tripId`。
+- 私人檢查清單本機 ownership 使用 `userEmail + tripId`。
 - `user` 可進入私人檢查清單，可新增 / 編輯 / 刪除，但只能保存於本機。
 - `trip_editor` / `super_admin` 可新增 / 編輯 / 刪除自己的私人檢查清單，並可自動同步到雲端。
 - `trip_editor` / `super_admin` 都不可查看其他使用者的私人檢查清單。

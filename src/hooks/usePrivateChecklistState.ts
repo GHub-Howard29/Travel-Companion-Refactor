@@ -8,24 +8,41 @@ import {
   updatePrivateChecklistItem,
 } from "../services/privateChecklistService";
 
-export const usePrivateChecklistState = (tripId: string, userId: string) => {
+const normalizeUserEmail = (userEmail: string | null): string => {
+  return userEmail?.trim().toLowerCase() ?? "";
+};
+
+export const usePrivateChecklistState = (
+  tripId: string,
+  userEmail: string | null,
+) => {
   const [itemsByScope, setItemsByScope] = useState<
     Record<string, PrivateChecklistItem[]>
   >({});
-  const scopeKey = `${tripId}:${userId}`;
+  const ownerEmail = normalizeUserEmail(userEmail);
+  const canUsePrivateChecklist = Boolean(tripId && ownerEmail);
+  const scopeKey = `${tripId}:${ownerEmail}`;
   const items = useMemo(
-    () => itemsByScope[scopeKey] ?? getPrivateChecklist(tripId, userId).items,
-    [itemsByScope, scopeKey, tripId, userId],
+    () =>
+      canUsePrivateChecklist
+        ? itemsByScope[scopeKey] ??
+          getPrivateChecklist(tripId, ownerEmail).items
+        : [],
+    [canUsePrivateChecklist, itemsByScope, ownerEmail, scopeKey, tripId],
   );
 
   const addItem = useCallback((label: string) => {
+    if (!canUsePrivateChecklist) {
+      return;
+    }
+
     setItemsByScope((currentItemsByScope) => {
       const currentItems =
         currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, userId).items;
+        getPrivateChecklist(tripId, ownerEmail).items;
       const nextChecklist = createPrivateChecklistItem(
         tripId,
-        userId,
+        ownerEmail,
         label,
         currentItems,
       );
@@ -35,13 +52,17 @@ export const usePrivateChecklistState = (tripId: string, userId: string) => {
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [scopeKey, tripId, userId]);
+  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
 
   const toggleItem = useCallback((itemId: string) => {
+    if (!canUsePrivateChecklist) {
+      return;
+    }
+
     setItemsByScope((currentItemsByScope) => {
       const currentItems =
         currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, userId).items;
+        getPrivateChecklist(tripId, ownerEmail).items;
       const targetItem = currentItems.find((item) => item.id === itemId);
 
       if (!targetItem) {
@@ -50,7 +71,7 @@ export const usePrivateChecklistState = (tripId: string, userId: string) => {
 
       const nextChecklist = updatePrivateChecklistItem(
         tripId,
-        userId,
+        ownerEmail,
         itemId,
         { isChecked: !targetItem.isChecked },
         currentItems,
@@ -61,16 +82,20 @@ export const usePrivateChecklistState = (tripId: string, userId: string) => {
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [scopeKey, tripId, userId]);
+  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
 
   const renameItem = useCallback((itemId: string, label: string) => {
+    if (!canUsePrivateChecklist) {
+      return;
+    }
+
     setItemsByScope((currentItemsByScope) => {
       const currentItems =
         currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, userId).items;
+        getPrivateChecklist(tripId, ownerEmail).items;
       const nextChecklist = updatePrivateChecklistItem(
         tripId,
-        userId,
+        ownerEmail,
         itemId,
         { label },
         currentItems,
@@ -81,16 +106,20 @@ export const usePrivateChecklistState = (tripId: string, userId: string) => {
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [scopeKey, tripId, userId]);
+  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
 
   const removeItem = useCallback((itemId: string) => {
+    if (!canUsePrivateChecklist) {
+      return;
+    }
+
     setItemsByScope((currentItemsByScope) => {
       const currentItems =
         currentItemsByScope[scopeKey] ??
-        getPrivateChecklist(tripId, userId).items;
+        getPrivateChecklist(tripId, ownerEmail).items;
       const nextChecklist = deletePrivateChecklistItem(
         tripId,
-        userId,
+        ownerEmail,
         itemId,
         currentItems,
       );
@@ -100,7 +129,7 @@ export const usePrivateChecklistState = (tripId: string, userId: string) => {
         [scopeKey]: nextChecklist.items,
       };
     });
-  }, [scopeKey, tripId, userId]);
+  }, [canUsePrivateChecklist, ownerEmail, scopeKey, tripId]);
 
   return {
     items,

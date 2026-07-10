@@ -143,7 +143,7 @@ Expense Module
 - [x] 將共同檢查清單顯示與勾選操作改由權限控制
 - [x] 將共同檢查清單 / 私人檢查清單權限矩陣落地到 permission.ts
 - [x] 建立私人檢查清單畫面與 localStorage 持久化
-- [x] 定案私人檢查清單 ownership 使用 `userId + tripId`
+- [x] 定案私人檢查清單本機 ownership 使用 `userEmail + tripId`
 - [x] 定案私人檢查清單放在左上角功能選單中，位於共同檢查清單下方
 - [x] 定案 super_admin 不可查看其他使用者私人檢查清單
 - [x] 確認 trip_editor 不可查看其他成員私人檢查清單
@@ -188,9 +188,11 @@ Expense Module
 
 # 七、文件維護
 
-重要功能完成後：
+文件採集中整理原則。
 
-同步更新：
+平常小步實作不逐次更新文件。
+
+當 Product Owner 要求整理文件、整理交接文件、準備 Commit、要求 Commit，或階段收尾時，再依實際影響集中更新：
 
 - 架構藍圖
 - 模組架構
@@ -199,7 +201,7 @@ Expense Module
 - 版本更新紀錄
 - 本文件
 
-文件與程式碼同步維護。
+若程式修改會讓既有文件中的定案規則明顯誤導後續開發，先提醒 Product Owner，再由 Product Owner 決定是否立即更新文件。
 
 ---
 
@@ -214,7 +216,7 @@ Expense Module
 - Build
 - Test
 - Commit
-- 更新文件
+- 視 Product Owner 要求集中整理文件
 
 全部完成後，
 

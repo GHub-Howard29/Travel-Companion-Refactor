@@ -350,7 +350,7 @@ export default function App() {
             {currentScreenType === "privateChecklist" && (
               <PrivateChecklistPage
                 tripId={selectedTripId}
-                userId={userId}
+                userEmail={userEmail}
                 canViewPrivateChecklist={permission.canViewPrivateChecklist}
                 canEditPrivateChecklist={permission.canEditPrivateChecklist}
                 canTogglePrivateChecklist={permission.canTogglePrivateChecklist}

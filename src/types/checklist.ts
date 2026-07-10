@@ -14,7 +14,7 @@ export interface ChecklistProgress {
 export interface PrivateChecklistItem {
   id: string;
   tripId: string;
-  userId: string;
+  userEmail: string;
   label: string;
   isChecked: boolean;
   createdAt: string;
@@ -23,7 +23,7 @@ export interface PrivateChecklistItem {
 
 export interface PrivateChecklist {
   tripId: string;
-  userId: string;
+  userEmail: string;
   items: PrivateChecklistItem[];
   updatedAt: string;
 }

@@ -271,7 +271,7 @@ V3-1
 - `PrivateChecklistPage` 負責私人確認清單畫面
 - `usePrivateChecklistState` 負責私人確認清單畫面狀態轉接
 - `privateChecklistService` 負責私人確認清單本機資料操作
-- `privateChecklistStorage` 負責 `userId + tripId` localStorage 讀寫與執行期資料驗證
+- `privateChecklistStorage` 負責 `userEmail + tripId` localStorage 讀寫與執行期資料驗證
 
 共同檢查清單資料流：
 
@@ -305,7 +305,7 @@ localStorage
 
 - Trip JSON 的 `checklistData` 仍作為共同檢查清單 seed
 - 勾選狀態依 `tripId` 寫入 localStorage
-- 私人確認清單依 `userId + tripId` 寫入 localStorage
+- 私人確認清單依 `userEmail + tripId` 寫入 localStorage
 - 私人確認清單目前只保存於本機，尚未同步 Supabase
 - F5 後保留勾選狀態
 - 不同 Trip 各自保留勾選狀態
@@ -413,7 +413,7 @@ Trip 共同準備事項。
 - `trip_editor` 不可查看其他成員的私人檢查清單。
 - `super_admin` 可使用與管理自己的私人檢查清單，並可自動同步到雲端。
 - `super_admin` 不可查看其他使用者的私人檢查清單。
-- 私人檢查清單 ownership 使用 `userId + tripId`。
+- 私人檢查清單 ownership 使用 `userEmail + tripId`。
 - 私人檢查清單是獨立 Travel Tool，放在左上角功能選單內，位置在共同檢查清單下方。
 - 共同檢查清單頁面不增加私人清單分頁或第二層選擇；目前共同清單進入後仍直接可勾選。
 
@@ -543,9 +543,11 @@ otherInfoData
 
 ---
 
-# 十二、文件更新提醒（V3-1 完成後）
+# 十二、文件整理提醒（V3-1 完成後）
 
-完成 V3-1 時，需同步更新：
+文件採集中整理原則，不因每個小 Step 逐次更新。
+
+當 Product Owner 要求整理文件、整理交接文件、準備 Commit，或 V3-1 收尾時，再依實際影響集中更新：
 
 - README
 - 06 功能規格

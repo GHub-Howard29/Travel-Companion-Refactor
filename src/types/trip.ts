@@ -34,17 +34,27 @@ export interface CustomTabConfig {
   mainText: string;
 }
 
+export type SidebarItemType =
+  | "itinerary"
+  | "checklist"
+  | "privateChecklist"
+  | "expense"
+  | "text"
+  | "otherInfo";
+
+export interface SidebarItemConfig {
+  id: string;
+  title: string;
+  type: SidebarItemType;
+}
+
 // 5. 對應詳細行程（free-travel.json / group-tour.json）的完整內容架構
 export interface TripDetail {
   id: string;
   title: string;
   departureDate: string;
   isPublic: boolean;
-  sidebarConfig: Array<{
-    id: string;
-    title: string;
-    type: string;
-  }>;
+  sidebarConfig: SidebarItemConfig[];
   content: {
     days: number[];
     custom_tab_1: CustomTabConfig;

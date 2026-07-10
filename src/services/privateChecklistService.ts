@@ -10,27 +10,27 @@ const createPrivateChecklistItemId = (): string => {
 
 export const getPrivateChecklist = (
   tripId: string,
-  userId: string,
+  userEmail: string,
 ): PrivateChecklist => {
-  return readStoredPrivateChecklist(tripId, userId);
+  return readStoredPrivateChecklist(tripId, userEmail);
 };
 
 export const createPrivateChecklistItem = (
   tripId: string,
-  userId: string,
+  userEmail: string,
   label: string,
   currentItems: PrivateChecklistItem[],
 ): PrivateChecklist => {
   const now = new Date().toISOString();
   const nextChecklist: PrivateChecklist = {
     tripId,
-    userId,
+    userEmail,
     items: [
       ...currentItems,
       {
         id: createPrivateChecklistItemId(),
         tripId,
-        userId,
+        userEmail,
         label,
         isChecked: false,
         createdAt: now,
@@ -47,7 +47,7 @@ export const createPrivateChecklistItem = (
 
 export const updatePrivateChecklistItem = (
   tripId: string,
-  userId: string,
+  userEmail: string,
   itemId: string,
   patch: Partial<Pick<PrivateChecklistItem, "label" | "isChecked">>,
   currentItems: PrivateChecklistItem[],
@@ -55,9 +55,9 @@ export const updatePrivateChecklistItem = (
   const now = new Date().toISOString();
   const nextChecklist: PrivateChecklist = {
     tripId,
-    userId,
+    userEmail,
     items: currentItems.map((item) =>
-      item.id === itemId
+      item.id === itemId && item.tripId === tripId && item.userEmail === userEmail
         ? {
             ...item,
             ...patch,
@@ -75,14 +75,21 @@ export const updatePrivateChecklistItem = (
 
 export const deletePrivateChecklistItem = (
   tripId: string,
-  userId: string,
+  userEmail: string,
   itemId: string,
   currentItems: PrivateChecklistItem[],
 ): PrivateChecklist => {
   const nextChecklist: PrivateChecklist = {
     tripId,
-    userId,
-    items: currentItems.filter((item) => item.id !== itemId),
+    userEmail,
+    items: currentItems.filter(
+      (item) =>
+        !(
+          item.id === itemId &&
+          item.tripId === tripId &&
+          item.userEmail === userEmail
+        ),
+    ),
     updatedAt: new Date().toISOString(),
   };
 

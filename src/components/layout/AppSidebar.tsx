@@ -1,6 +1,7 @@
 import {
   Calendar,
   CheckSquare,
+  ClipboardCheck,
   FolderOpen,
   Home,
   LogIn,
@@ -34,6 +35,8 @@ const renderSidebarIcon = (type: string) => {
       return <Calendar size={18} />;
     case "checklist":
       return <CheckSquare size={18} />;
+    case "privateChecklist":
+      return <ClipboardCheck size={18} />;
     case "otherInfo":
       return <FolderOpen size={18} />;
     case "expense":

@@ -5,7 +5,7 @@ import { usePrivateChecklistState } from "../hooks/usePrivateChecklistState";
 
 interface PrivateChecklistPageProps {
   tripId: string;
-  userId: string | null;
+  userEmail: string | null;
   canViewPrivateChecklist: boolean;
   canEditPrivateChecklist: boolean;
   canTogglePrivateChecklist: boolean;
@@ -14,15 +14,14 @@ interface PrivateChecklistPageProps {
 
 export const PrivateChecklistPage = ({
   tripId,
-  userId,
+  userEmail,
   canViewPrivateChecklist,
   canEditPrivateChecklist,
   canTogglePrivateChecklist,
   canSyncPrivateChecklist,
 }: PrivateChecklistPageProps) => {
-  const safeUserId = userId ?? "";
   const { items, addItem, toggleItem, renameItem, removeItem } =
-    usePrivateChecklistState(tripId, safeUserId);
+    usePrivateChecklistState(tripId, userEmail);
   const [newLabel, setNewLabel] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
@@ -30,7 +29,7 @@ export const PrivateChecklistPage = ({
   const progressPercent =
     items.length > 0 ? (checkedCount / items.length) * 100 : 0;
 
-  if (!canViewPrivateChecklist || !userId) {
+  if (!canViewPrivateChecklist || !userEmail) {
     return (
       <div className="text-center py-12 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl shadow-sm">
         私人確認清單需先登入後才能使用。

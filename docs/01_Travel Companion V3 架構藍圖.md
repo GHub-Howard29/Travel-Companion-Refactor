@@ -216,7 +216,7 @@ Test
 Commit
     │
     ▼
-更新文件
+視 Product Owner 要求集中整理文件
 ```
 
 完成設計規格後，才開始 Coding。
