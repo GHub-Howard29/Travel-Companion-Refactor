@@ -268,6 +268,40 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     [currentTrip, getBasePath, selectedTripId, selectedTripMeta, supabase],
   );
 
+  const refreshTripOptionsAndSelect = useCallback(
+    async (preferredTripId?: string): Promise<{
+      didFindPreferredTrip: boolean;
+      selectedTrip: TripMeta | null;
+    }> => {
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      const preferredTrip = preferredTripId
+        ? nextTrips.find((trip) => trip.id === preferredTripId) ?? null
+        : null;
+      const fallbackTrip = findDefaultTrip(nextTrips) ?? nextTrips[0] ?? null;
+      const nextTrip = preferredTrip ?? fallbackTrip;
+
+      setTripOptions(nextTrips);
+      setSelectedTripId(nextTrip?.id ?? "");
+      setCurrentScreen("itinerary");
+      setActiveDay(1);
+
+      if (!nextTrip) {
+        setCurrentTrip(null);
+        setIsLoading(false);
+      }
+
+      if (nextTrip?.id === selectedTripId) {
+        setIsLoading(false);
+      }
+
+      return {
+        didFindPreferredTrip: Boolean(preferredTrip),
+        selectedTrip: nextTrip,
+      };
+    },
+    [getBasePath, selectedTripId, supabase],
+  );
+
   const deleteTrip = useCallback(async (tripId: string) => {
     if (!tripId) return;
 
@@ -344,6 +378,7 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     createTrip,
     updateTrip,
     deleteTrip,
+    refreshTripOptionsAndSelect,
     saveCurrentTripDetail,
     currentTripEditorEmails,
     superAdminEmails,

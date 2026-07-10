@@ -64,7 +64,6 @@ export default function App() {
     setUserEmail,
     tripOptions,
     selectedTripId,
-    setSelectedTripId,
     currentTrip,
     isLoading,
     setIsLoading,
@@ -92,6 +91,7 @@ export default function App() {
     createTrip,
     updateTrip,
     deleteTrip,
+    refreshTripOptionsAndSelect,
     saveCurrentTripDetail,
     currentTripEditorEmails,
     superAdminEmails,
@@ -483,15 +483,25 @@ export default function App() {
         onCreateTrip={openCreateTrip}
         onEditTrip={openEditTrip}
         onTripSelect={(tripId) => {
-          const nextTrip = tripOptions.find((trip) => trip.id === tripId);
-          if (!nextTrip) return;
           setIsLoading(true);
-          applyTripDefaults(nextTrip);
-          setCurrentScreen("itinerary");
-          setActiveDay(1);
-          setSelectedTripId(nextTrip.id);
-          setIsMenuOpen(false);
-          closeItineraryManageMode();
+          void refreshTripOptionsAndSelect(tripId).then(
+            ({ didFindPreferredTrip, selectedTrip }) => {
+              if (selectedTrip) {
+                applyTripDefaults(selectedTrip);
+              }
+
+              if (!didFindPreferredTrip) {
+                alert("此旅程已被其他設備刪除，已切換到目前可用的旅程。");
+              }
+
+              setIsMenuOpen(false);
+              closeItineraryManageMode();
+            },
+          ).catch((error) => {
+            console.warn(error);
+            setIsLoading(false);
+            alert("同步旅程資料失敗，請稍後再試。");
+          });
         }}
         onLogout={handleLogout}
         onGoogleLogin={handleGoogleLogin}
