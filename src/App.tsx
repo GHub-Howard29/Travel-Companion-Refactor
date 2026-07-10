@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Icon 圖示
-import { MapPin, ExternalLink } from "lucide-react";
+import { ExternalLink, MapPin, Settings2, X } from "lucide-react";
 
 // Supabase 雲端資料庫
 import { createClient } from "@supabase/supabase-js";
@@ -95,6 +95,7 @@ export default function App() {
   } = useTripWorkspace({ supabase });
   const [tripEditorMode, setTripEditorMode] = useState<"create" | "edit">("create");
   const [isTripEditorOpen, setIsTripEditorOpen] = useState(false);
+  const [isItineraryManageMode, setIsItineraryManageMode] = useState(false);
   const [isItineraryFormOpen, setIsItineraryFormOpen] = useState(false);
   const [editingItineraryIndex, setEditingItineraryIndex] = useState<number | null>(null);
   const [itineraryDraft, setItineraryDraft] = useState<ItineraryItem>(
@@ -167,6 +168,13 @@ export default function App() {
     return "/";
   };
 
+  const closeItineraryManageMode = () => {
+    setIsItineraryManageMode(false);
+    setIsItineraryFormOpen(false);
+    setEditingItineraryIndex(null);
+    setItineraryDraft(createEmptyItineraryDraft());
+  };
+
   // 登入 / 登出
   const handleGoogleLogin = async () => {
     const currentRedirectUrl = window.location.origin + getBasePath();
@@ -192,6 +200,7 @@ export default function App() {
     setHasEditPermission(false);
     setCurrentScreen("itinerary");
     setIsMenuOpen(false);
+    closeItineraryManageMode();
   };
 
   useEffect(() => {
@@ -206,6 +215,7 @@ export default function App() {
       return;
     }
     setCurrentScreen(item.id);
+    closeItineraryManageMode();
     if (item.type === "expense") {
       setActiveCurrency("ALL");
     }
@@ -284,6 +294,13 @@ export default function App() {
     setEditingItineraryIndex(null);
     setItineraryDraft(createEmptyItineraryDraft());
     setIsItineraryFormOpen(true);
+  };
+  const toggleItineraryManageMode = () => {
+    if (isItineraryManageMode) {
+      closeItineraryManageMode();
+      return;
+    }
+    setIsItineraryManageMode(true);
   };
   const startEditItineraryItem = (event: ItineraryItem, index: number) => {
     setEditingItineraryIndex(index);
@@ -412,6 +429,7 @@ export default function App() {
           setActiveDay(1);
           setSelectedTripId(nextTrip.id);
           setIsMenuOpen(false);
+          closeItineraryManageMode();
         }}
         onLogout={handleLogout}
         onGoogleLogin={handleGoogleLogin}
@@ -457,7 +475,12 @@ export default function App() {
                   {currentTrip.content.days.map((day) => (
                     <button
                       key={day}
-                      onClick={() => setActiveDay(day)}
+                      onClick={() => {
+                        if (activeDay !== day) {
+                          closeItineraryManageMode();
+                        }
+                        setActiveDay(day);
+                      }}
                       className={`py-2 px-1 rounded-lg font-semibold text-xs transition-all shadow-sm truncate ${activeDay === day ? "bg-slate-900 text-white font-bold" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}
                     >
                       D{day}
@@ -465,17 +488,33 @@ export default function App() {
                   ))}
                 </div>
                 <div className="mb-4 border-b border-slate-200 pb-3">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-extrabold text-amber-700 tracking-tight">
-                      {String(activeDay).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h2>行程探索 Day {activeDay}</h2>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-4xl font-extrabold text-amber-700 tracking-tight">
+                        {String(activeDay).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h2>行程探索 Day {activeDay}</h2>
+                      </div>
                     </div>
+                    {hasEditPermission && (
+                      <button
+                        type="button"
+                        onClick={toggleItineraryManageMode}
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                          isItineraryManageMode
+                            ? "bg-slate-900 text-white hover:bg-slate-800"
+                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {isItineraryManageMode ? <X size={14} /> : <Settings2 size={14} />}
+                        {isItineraryManageMode ? "退出" : "管理"}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {hasEditPermission && (
+                {hasEditPermission && isItineraryManageMode && (
                   <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-800">
@@ -587,7 +626,7 @@ export default function App() {
                             </button>
                           </div>
                         )}
-                        {hasEditPermission && (
+                        {hasEditPermission && isItineraryManageMode && (
                           <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
                             <button
                               type="button"
