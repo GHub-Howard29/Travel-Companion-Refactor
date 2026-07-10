@@ -355,6 +355,7 @@ export default function App() {
               <ChecklistPage
                 tripId={selectedTripId}
                 checklistData={checklistData}
+                supabase={supabase}
                 canViewSharedChecklist={permission.canViewSharedChecklist}
                 canToggleSharedChecklist={permission.canToggleSharedChecklist}
               />

@@ -70,6 +70,23 @@ const ensureCloudPrivateChecklist = async (
     .single();
 
   if (insertError) {
+    if (insertError.code === "23505") {
+      const { data: checklistAfterConflict, error: conflictSelectError } =
+        await supabase
+          .from("checklists")
+          .select("id, updated_at")
+          .eq("trip_id", tripId)
+          .eq("scope", "private")
+          .eq("owner_user_id", userId)
+          .maybeSingle();
+
+      if (conflictSelectError) {
+        throw conflictSelectError;
+      }
+
+      return (checklistAfterConflict as CloudChecklistRow | null) ?? null;
+    }
+
     throw insertError;
   }
 

@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ChecklistItem } from "../types";
 import { useChecklistState } from "../hooks/useChecklistState";
@@ -6,6 +7,7 @@ import { useChecklistState } from "../hooks/useChecklistState";
 interface ChecklistPageProps {
   tripId: string;
   checklistData: ChecklistItem[];
+  supabase: SupabaseClient;
   canViewSharedChecklist: boolean;
   canToggleSharedChecklist: boolean;
 }
@@ -13,19 +15,29 @@ interface ChecklistPageProps {
 export const ChecklistPage = ({
   tripId,
   checklistData,
+  supabase,
   canViewSharedChecklist,
   canToggleSharedChecklist,
 }: ChecklistPageProps) => {
-  const { checkedItemIds, toggleChecklistItem } = useChecklistState(tripId);
+  const { items, syncStatus, syncError, toggleChecklistItem } =
+    useChecklistState(
+      tripId,
+      checklistData,
+      supabase,
+      canToggleSharedChecklist,
+    );
+  const checkedItemIds = items
+    .filter((item) => item.isChecked)
+    .map((item) => item.id);
   const visibleCheckedItemIds = checkedItemIds.filter((checkedItemId) =>
-    checklistData.some((item) => item.id === checkedItemId),
+    items.some((item) => item.id === checkedItemId),
   );
   const categories = Array.from(
-    new Set(checklistData.map((item) => item.category)),
+    new Set(items.map((item) => item.category)),
   );
   const progressPercent =
-    checklistData.length > 0
-      ? (visibleCheckedItemIds.length / checklistData.length) * 100
+    items.length > 0
+      ? (visibleCheckedItemIds.length / items.length) * 100
       : 0;
 
   if (!canViewSharedChecklist) {
@@ -36,7 +48,7 @@ export const ChecklistPage = ({
     );
   }
 
-  if (checklistData.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="text-center py-12 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl shadow-sm">
         此行程尚未配置檢查清單。
@@ -51,7 +63,7 @@ export const ChecklistPage = ({
           <span>準備進度</span>
           <span className="text-rose-700">
             {Math.round(progressPercent)}% ({visibleCheckedItemIds.length}/
-            {checklistData.length})
+            {items.length})
           </span>
         </div>
         <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
@@ -65,6 +77,14 @@ export const ChecklistPage = ({
             目前角色可查看共同檢查清單，但不可勾選。
           </p>
         )}
+        {canToggleSharedChecklist && (
+          <p className="mt-3 text-xs font-medium text-slate-500">
+            {syncStatus === "syncing" && "正在同步共同檢查清單..."}
+            {syncStatus === "synced" && "共同檢查清單已同步到雲端。"}
+            {syncStatus === "error" && syncError}
+            {syncStatus === "local" && "目前資料先保存於本機。"}
+          </p>
+        )}
       </div>
 
       {categories.map((category) => (
@@ -73,10 +93,10 @@ export const ChecklistPage = ({
             {category}
           </h3>
           <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden divide-y divide-slate-100">
-            {checklistData
+            {items
               .filter((item) => item.category === category)
               .map((item) => {
-                const isChecked = checkedItemIds.includes(item.id);
+                const isChecked = item.isChecked;
 
                 return (
                   <button

@@ -9,9 +9,9 @@
 - Branch：`develop`
 - 最新已知 commit：`1fab2de 更新工作交接事項`
 - 前一個功能 commit：`a748e82 落地檢查清單權限與私人清單本機版`
-- 目前工作樹已有私人清單雲端同步與文件整理變更，尚未 commit。
+- 目前工作樹可能有未提交變更；完成文件或程式修改並驗證通過後，Codex 應直接建立繁體中文 commit。
 - 尚未確認是否已 push 到遠端。
-- commit message 規則：使用者已要求「中文 commit」，後續 Codex 建立 commit 時一律使用繁體中文。
+- commit message 規則：使用者已要求「中文 commit」，後續 Codex 完成文件或程式修改後一律直接使用繁體中文 commit message 建立 commit，並回報實際使用的中文 commit message。
 
 ### 目前開發進度
 
@@ -193,11 +193,11 @@ Other Info / lint related：
 
 ## Commit Message Language
 
-- 當使用者要求由 Codex 建立 Git commit 時，commit message 一律使用繁體中文。
+- Codex 完成文件或程式修改並驗證通過後，應直接建立 Git commit；commit message 一律使用繁體中文。
 - commit message 應簡潔描述實際變更，例如：`新增其他資訊本機管理`、`修正共同檢查清單名稱`。
 - 不要使用英文 commit message，除非使用者在該次請求中明確指定。
-- 當完成一段適合或需要提交的工作時，Codex 要主動提醒使用者目前適合 commit，並提供可直接使用的繁體中文 commit message 建議。
-- 若使用者尚未要求 commit，Codex 只提醒並提供建議訊息，不主動建立 commit。
+- commit 完成後，Codex 必須回報「已使用中文 commit 訊息：`...` 完成提交」。
+- 若驗證失敗、仍有阻塞、或工作樹包含不應由 Codex 一併提交的使用者變更，先回報原因並暫停 commit。
 本文件是給 AI agent / coding assistant 進入本專案時的工作入口。請先讀本文件，再依任務需要查閱 `docs/` 內的詳細文件。
 
 ## 專案定位
@@ -447,9 +447,10 @@ AI agent 負責：
 
 ## Git / Delivery
 
-- 不要自動 commit，除非使用者要求。
-- commit 前必須先 build。
-- 工作完成且適合 commit 時，要主動提醒使用者，並提供繁體中文 commit message 建議。
+- 文件或程式修改完成且驗證通過後，Codex 應直接建立 commit。
+- commit message 一律使用繁體中文。
+- commit 前必須先 build；依風險補跑 lint 或手動回歸。
+- commit 完成後，回報實際使用的中文 commit message。
 - 若工作樹已有使用者改動，不要 revert。
 - 不要覆蓋 `.env` 或任何 secrets。
 - 不要提交 `dist/`，除非使用者明確要求部署流程。

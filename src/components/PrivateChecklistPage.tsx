@@ -116,6 +116,9 @@ export const PrivateChecklistPage = ({
           {!canSyncPrivateChecklist && "目前資料僅保存於此裝置。"}
           {canSyncPrivateChecklist && syncStatus === "syncing" && "正在同步雲端..."}
           {canSyncPrivateChecklist && syncStatus === "synced" && "已同步到雲端。"}
+          {canSyncPrivateChecklist &&
+            syncStatus === "emptyCloud" &&
+            "雲端私人清單已準備好，新增項目後會同步。"}
           {canSyncPrivateChecklist && syncStatus === "error" && syncError}
           {canSyncPrivateChecklist && syncStatus === "local" && "目前資料先保存於本機。"}
         </p>

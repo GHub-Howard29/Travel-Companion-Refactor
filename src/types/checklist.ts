@@ -11,6 +11,23 @@ export interface ChecklistProgress {
   updatedAt: string;
 }
 
+export interface SharedChecklistItem {
+  id: string;
+  tripId: string;
+  category: string;
+  label: string;
+  isChecked: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SharedChecklist {
+  tripId: string;
+  items: SharedChecklistItem[];
+  updatedAt: string;
+}
+
 export interface PrivateChecklistItem {
   id: string;
   tripId: string;

@@ -294,6 +294,10 @@ Git Commit：
 
 一律繁體中文。
 
+文件或程式修改完成且驗證通過後，由 Codex 直接建立 Git Commit。
+
+Commit 完成後，Codex 必須回報實際使用的中文 Commit 訊息。
+
 ---
 
 # 九、Build Rules
@@ -308,7 +312,7 @@ npm run build
 
 Build 成功：
 
-才建議 Commit。
+直接 Commit。
 
 若 Build 失敗：
 
@@ -455,6 +459,7 @@ AI 不得將：
 
 【Git Commit】
 （繁體中文）
+完成文件或程式修改並驗證通過後，直接建立 Commit，並回報實際使用的中文 Commit 訊息。
 ```
 
 ---

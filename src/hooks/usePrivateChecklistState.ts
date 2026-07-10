@@ -28,7 +28,7 @@ export const usePrivateChecklistState = (
     Record<string, PrivateChecklistItem[]>
   >({});
   const [syncStatus, setSyncStatus] = useState<
-    "local" | "syncing" | "synced" | "error"
+    "local" | "syncing" | "synced" | "emptyCloud" | "error"
   >("local");
   const [syncError, setSyncError] = useState<string | null>(null);
   const ownerEmail = normalizeUserEmail(userEmail);
@@ -87,12 +87,29 @@ export const usePrivateChecklistState = (
           return;
         }
 
-        if (localChecklist.items.length === 0 && cloudChecklist) {
+        if (
+          localChecklist.items.length === 0 &&
+          cloudChecklist &&
+          cloudChecklist.items.length > 0
+        ) {
           writeStoredPrivateChecklist(cloudChecklist);
           setItemsByScope((currentItemsByScope) => ({
             ...currentItemsByScope,
             [scopeKey]: cloudChecklist.items,
           }));
+        } else if (
+          localChecklist.items.length === 0 &&
+          cloudChecklist &&
+          cloudChecklist.items.length === 0
+        ) {
+          setItemsByScope((currentItemsByScope) => ({
+            ...currentItemsByScope,
+            [scopeKey]: [],
+          }));
+          if (isActive) {
+            setSyncStatus("emptyCloud");
+          }
+          return;
         } else {
           await pushPrivateChecklistToCloud(supabase, localChecklist);
         }
