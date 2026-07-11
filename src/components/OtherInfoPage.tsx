@@ -23,10 +23,12 @@ import {
   parseOtherInfoContentLinks,
 } from "../utils/otherInfoUtils";
 import { useOtherInfoForm } from "../hooks/useOtherInfoForm";
+import type { Role } from "../permissions/roles";
 
 interface OtherInfoPageProps {
   tripId: string;
   canEdit: boolean;
+  currentRole: Role;
   items?: OtherInfoItem[];
   onSaveItems?: (items: OtherInfoItem[]) => Promise<void>;
   pageTitle?: string;
@@ -66,6 +68,7 @@ const renderContentWithLinks = (content: string) => {
 export const OtherInfoPage = ({
   tripId,
   canEdit,
+  currentRole,
   items: syncedItems,
   onSaveItems,
   pageTitle = "旅行資訊",
@@ -76,6 +79,16 @@ export const OtherInfoPage = ({
   const initialFolderId = specialFolderId || folders[0]?.id || "";
   const [localItems, setLocalItems] = useState<OtherInfoItem[]>(() => getItems(tripId));
   const items = syncedItems ?? localItems;
+  const visibleItems = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          !item.allowedRoles ||
+          item.allowedRoles.length === 0 ||
+          item.allowedRoles.includes(currentRole),
+      ),
+    [currentRole, items],
+  );
   const [activeFolderId, setActiveFolderId] = useState(initialFolderId);
   const [isManageMode, setIsManageMode] = useState(false);
   const {
@@ -94,9 +107,9 @@ export const OtherInfoPage = ({
   const activeItems = useMemo(
     () =>
       isSpecialInfoPage
-        ? getOtherInfoItemsByFolderId(items, initialFolderId)
-        : getOtherInfoItemsByFolderId(items, activeFolderId),
-    [activeFolderId, initialFolderId, isSpecialInfoPage, items],
+        ? getOtherInfoItemsByFolderId(visibleItems, initialFolderId)
+        : getOtherInfoItemsByFolderId(visibleItems, activeFolderId),
+    [activeFolderId, initialFolderId, isSpecialInfoPage, visibleItems],
   );
 
   const closeManageMode = () => {
@@ -223,7 +236,7 @@ export const OtherInfoPage = ({
       <div className="flex flex-wrap gap-2">
         {folders.map((folder) => {
           const isActive = folder.id === activeFolderId;
-          const count = getOtherInfoItemsByFolderId(items, folder.id).length;
+          const count = getOtherInfoItemsByFolderId(visibleItems, folder.id).length;
 
           return (
             <button

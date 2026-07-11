@@ -66,7 +66,7 @@ export function createPermission(
 
     // Reference（旅行資訊）
     canViewReference: true,
-    canEditReference: isSuperAdmin,
+    canEditReference: canEditSharedTripData,
 
     // Shared Checklist（共用清單）
     canViewSharedChecklist: true,

@@ -137,11 +137,10 @@ V3-1 目前已完成：
 
 最高優先：
 
-- 領隊導遊聯絡資訊 / 自駕租車須知與其他資訊需改為「瀏覽模式 → 管理入口 → 編輯層 → 退出」。
-- 旅費記帳本編輯既有帳目時，若已有附件，需補上單獨刪除附件功能，刪除附件時不可刪除帳目本身。
-- 記帳本新增帳目附件入口需修正手機端流程：需同時支援使用手機拍照與選擇既有照片 / 檔案。
-- 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程、Guest 瀏覽旅程。
-- Trip Cloud 驗證完成後，再接續 Other Info / Reference 權限過濾與雲端同步設計。
+- 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程。
+- Guest 瀏覽旅程已於 2026-07-11 本機 App 驗證通過。
+- Other Info / Reference 權限過濾與「管理 / 退出」模式已完成。
+- 接續設計 Other Info / Reference Supabase schema / RLS，之後實作最小雲端同步。
 
 仍待評估：
 
@@ -151,7 +150,7 @@ V3-1 目前已完成：
 - 是否要將 `admin_users` 中長期補上 `user_id uuid`。
   - 目前程式與 SQL 仍可沿用 `email + role + trip_id`，新增 `trip_editor` 只需維護 Supabase 表格，不需改程式。
   - 若未來 RLS 想更穩，可再補 `user_id`。
-- 其他資訊 / 參考資訊尚未實作權限過濾與雲端同步。
+- 其他資訊 / 參考資訊尚未實作 Supabase schema / RLS 與雲端同步。
 - Vite chunk size warning 尚未處理。
 
 ### 重要檔案
@@ -207,9 +206,7 @@ Trip Management：
 
 1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
-   - 先處理 `docs/03_Bug修正紀錄.md` 內 BUG003、BUG006、BUG008。
-   - 更新 `docs/10_新對話交接文件.md`、`docs/09_待辦事項(TODO).md`、`docs/02_產品開發路線圖.md`。
-   - 接 Other Info / Reference 權限過濾。
+   - 使用 `super_admin` / `trip_editor` 帳號完成 Trip Cloud 實機驗證。
    - 設計 Other Info Supabase schema / RLS。
    - 實作 Other Info 最小雲端同步。
 3. 每次交付前執行：

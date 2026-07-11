@@ -230,27 +230,14 @@ V3 權限分級草案：
 
 目前程式：
 
-保留角色擴充能力。
+OtherInfoItem 保留 `allowedRoles`。
 
-OtherInfoItem：
+V3-1 已落地基本角色過濾：
 
-保留：
-
-allowedRoles
-
-但：
-
-V3-1
-
-不實作：
-
-角色判斷。
-
-不實作：
-
-權限過濾。
-
-待其他資訊功能完成後，再實作。
+- 未設定 `allowedRoles`：所有角色皆可閱讀。
+- 有設定 `allowedRoles`：僅指定角色可閱讀。
+- Reference / Other Info 編輯權限統一由 `permission.canEditReference` 控制。
+- `super_admin` 與被指派的 `trip_editor` 可進入管理模式；未登入與一般 user 只能瀏覽。
 
 注意：
 

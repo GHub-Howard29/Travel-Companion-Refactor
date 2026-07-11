@@ -2,7 +2,7 @@
 
 > Travel Companion V3-1
 >
-> 最後更新：2026-07-10
+> 最後更新：2026-07-11
 
 ---
 
@@ -143,6 +143,13 @@ docs/sql/004_trip_cloud_validation.sql
 - Guest 不會看到「新增旅程」或「編輯旅程」。
 - Console 不應一直出現 `admin_users` 權限警告。
 
+2026-07-11 驗證結果：
+
+- 本機 App `http://127.0.0.1:5174/Travel-Companion/#` 未登入瀏覽模式可開啟。
+- 側欄可看到既有旅程與旅程切換選單。
+- 未登入時不顯示「新增旅程」、「編輯旅程」或可編輯者管理入口。
+- 此項已通過。
+
 ---
 
 ## 2. Super Admin 新增旅程
@@ -169,6 +176,10 @@ docs/sql/004_trip_cloud_validation.sql
 - Supabase `trips` table 新增一筆 row。
 - Supabase `admin_users` table 新增對應 `trip_editor` rows。
 
+2026-07-11 狀態：
+
+- 尚待使用 `super_admin` 帳號登入後實機驗證。
+
 ---
 
 ## 3. Super Admin 編輯旅程
@@ -190,6 +201,10 @@ docs/sql/004_trip_cloud_validation.sql
 - 新增的 editor email 會出現在 `admin_users`。
 - 移除的 editor email 會從該 trip 的 `admin_users` row 移除。
 
+2026-07-11 狀態：
+
+- 尚待使用 `super_admin` 帳號登入後實機驗證。
+
 ---
 
 ## 4. Trip Editor 編輯被指派旅程
@@ -209,6 +224,10 @@ docs/sql/004_trip_cloud_validation.sql
 - `trip_editor` 不可管理可編輯者 Email。
 - Supabase `trips` row 更新。
 - Supabase `admin_users` 不會被 `trip_editor` 修改。
+
+2026-07-11 狀態：
+
+- 尚待使用被指派的 `trip_editor` 帳號登入後實機驗證。
 
 ---
 

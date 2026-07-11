@@ -815,7 +815,8 @@ export default function App() {
               <OtherInfoPage
                 key={selectedTripId}
                 tripId={selectedTripId}
-                canEdit={hasEditPermission}
+                canEdit={permission.canEditReference}
+                currentRole={role}
                 items={currentTrip.content.otherInfoItems}
                 onSaveItems={handleSaveOtherInfoItems}
                 pageTitle={currentSidebarItem?.title}

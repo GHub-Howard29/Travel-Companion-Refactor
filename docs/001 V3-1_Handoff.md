@@ -79,11 +79,8 @@ Trip 管理第一階段已完成，旅程清單切換前會重新同步 Supabase
 尚未完成：
 
 - Checklist Pending Queue / Conflict Resolution 尚未實作
-- Other Info / Reference 權限過濾尚未完成
-- Other Info / Reference 與領隊導遊聯絡資訊 / 自駕租車須知尚未改為「管理 / 退出」模式
 - Other Info / Reference 雲端同步尚未完成
-- 記帳本編輯既有帳目時，附件尚不能單獨刪除
-- 手機新增帳目附件入口尚需補齊拍照與選擇既有照片 / 檔案流程
+- Other Info / Reference Supabase schema / RLS 尚未設計
 
 權限定案：
 
@@ -263,21 +260,15 @@ npm.cmd run build
 
 建議流程：
 
-1. 新對話先接近期 Bug Backlog 與管理入口一致化。
-2. 近期 Bug Backlog：
-   - 領隊導遊聯絡資訊 / 自駕租車須知與其他資訊改為「瀏覽模式 → 管理入口 → 編輯層 → 退出」。
-   - 旅費記帳本編輯既有帳目時，補上既有附件單獨刪除功能。
-   - 記帳本新增帳目附件入口補齊手機拍照與選擇既有照片 / 檔案流程。
-3. Other Info / Reference 建議範圍：
-   - 先定義權限矩陣。
-   - 落地 UI 權限過濾。
+1. 近期 Bug Backlog 與管理入口一致化已完成。
+2. Other Info / Reference 建議範圍：
    - 設計 Supabase schema / RLS。
    - 實作最小雲端同步。
    - 暫時不做完整 Pending Queue / Conflict Resolution。
-4. 暫緩項目：
+3. 暫緩項目：
    - Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列。
    - Conflict Resolution：本機與雲端同一筆資料都被修改時的合併或取捨規則。
    - 新 Travel Tool。
-5. 下一輪交付前執行：
+4. 下一輪交付前執行：
    - `npm run lint`
    - `npm run build`
