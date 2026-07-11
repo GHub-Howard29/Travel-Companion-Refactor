@@ -244,7 +244,7 @@ Trip 管理
 - [x] `http` / `https` URL 自動轉為可點擊超連結
 - [x] 權限過濾
 - [x] 領隊導遊聯絡資訊 / 自駕租車須知與其他資訊改為瀏覽優先，透過管理入口進入下一層編輯
-- [ ] 設計 Other Info Supabase schema / RLS
+- [x] 設計 Other Info Supabase schema / RLS
 - [ ] 雲端同步
 - [ ] 多人協作
 

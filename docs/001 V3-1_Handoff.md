@@ -80,7 +80,7 @@ Trip 管理第一階段已完成，旅程清單切換前會重新同步 Supabase
 
 - Checklist Pending Queue / Conflict Resolution 尚未實作
 - Other Info / Reference 雲端同步尚未完成
-- Other Info / Reference Supabase schema / RLS 尚未設計
+- Other Info / Reference Supabase schema / RLS 已設計，尚未在 Supabase SQL Editor 執行與驗證
 
 權限定案：
 
@@ -262,7 +262,8 @@ npm.cmd run build
 
 1. 近期 Bug Backlog 與管理入口一致化已完成。
 2. Other Info / Reference 建議範圍：
-   - 設計 Supabase schema / RLS。
+   - 執行 `docs/sql/005_other_info_cloud_schema.sql`。
+   - 執行 `docs/sql/006_other_info_cloud_validation.sql` 驗證。
    - 實作最小雲端同步。
    - 暫時不做完整 Pending Queue / Conflict Resolution。
 3. 暫緩項目：

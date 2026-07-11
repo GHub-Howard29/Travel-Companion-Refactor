@@ -140,7 +140,7 @@ V3-1 目前已完成：
 - 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程。
 - Guest 瀏覽旅程已於 2026-07-11 本機 App 驗證通過。
 - Other Info / Reference 權限過濾與「管理 / 退出」模式已完成。
-- 接續設計 Other Info / Reference Supabase schema / RLS，之後實作最小雲端同步。
+- Other Info / Reference Supabase schema / RLS 已設計，接續執行 SQL、驗證，再實作最小雲端同步。
 
 仍待評估：
 
@@ -207,7 +207,8 @@ Trip Management：
 1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
    - 使用 `super_admin` / `trip_editor` 帳號完成 Trip Cloud 實機驗證。
-   - 設計 Other Info Supabase schema / RLS。
+   - 在 Supabase SQL Editor 執行 `docs/sql/005_other_info_cloud_schema.sql`。
+   - 執行 `docs/sql/006_other_info_cloud_validation.sql` 驗證。
    - 實作 Other Info 最小雲端同步。
 3. 每次交付前執行：
 
