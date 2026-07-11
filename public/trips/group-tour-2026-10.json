@@ -5,8 +5,9 @@
   "isPublic": false,
   "sidebarConfig": [
     {"id": "itinerary", "title": "團體每日行程", "type": "itinerary"},
-    {"id": "checklist", "title": "跟團準備物品", "type": "checklist"},
+    {"id": "checklist", "title": "共同檢查清單", "type": "checklist"},
     {"id": "leader_info", "title": "領隊導遊聯絡資訊", "type": "text"},
+    {"id": "other_info", "title": "其他資訊", "type": "otherInfo"},
     {"id": "expense", "title": "旅費記帳本", "type": "expense"}
   ],
   "content": {

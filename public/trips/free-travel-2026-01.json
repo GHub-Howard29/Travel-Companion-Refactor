@@ -5,8 +5,9 @@
   "isPublic": true,
   "sidebarConfig": [
     {"id": "itinerary", "title": "每日詳細行程", "type": "itinerary"},
-    {"id": "checklist", "title": "行前檢查清單", "type": "checklist"},
+    {"id": "checklist", "title": "共同檢查清單", "type": "checklist"},
     {"id": "custom_info", "title": "自駕租車須知", "type": "text"},
+    {"id": "other_info", "title": "其他資訊", "type": "otherInfo"},
     {"id": "expense", "title": "旅費記帳本", "type": "expense"}
   ],
   "content": {

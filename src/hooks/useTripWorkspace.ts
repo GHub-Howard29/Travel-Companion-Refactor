@@ -1,14 +1,30 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AdminUser, TripDetail, TripMeta } from "../types";
-import { findDefaultTrip, sortTripsByDateDesc } from "../utils/tripHelpers";
+import type { AdminUser, TripDetail, TripEditorInput, TripMeta } from "../types";
+import { findDefaultTrip } from "../utils/tripHelpers";
 import { toPersonalBookTripId } from "../storage/expenseStorage";
+import { createPermission } from "../permissions/permission";
+import { mapRole } from "../permissions/roleMapper";
+import {
+  createTripRecord,
+  createTripRecordFromDetail,
+  createTripRecordFromExisting,
+  deleteTripRecordWithCloudSync,
+  getTripDetail,
+  getTripEditorEmails,
+  getTripMetas,
+  getSuperAdminEmails,
+  saveTripRecordWithCloudSync,
+  syncTripEditorEmails,
+  updateTripRecord,
+} from "../services/tripRepository";
 
 interface UseTripWorkspaceOptions {
   supabase: SupabaseClient;
 }
 
 export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) {
+  const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [tripOptions, setTripOptions] = useState<TripMeta[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string>("");
@@ -20,6 +36,8 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
   const [adminProfile, setAdminProfile] = useState<AdminUser | null>(null);
   const [hasEditPermission, setHasEditPermission] = useState<boolean>(false);
   const [expenseBookTripId, setExpenseBookTripId] = useState<string>("");
+  const [currentTripEditorEmails, setCurrentTripEditorEmails] = useState<string[]>([]);
+  const [superAdminEmails, setSuperAdminEmails] = useState<string[]>([]);
 
   const selectedTripMeta = tripOptions.find((trip) => trip.id === selectedTripId);
   const currentMembers = selectedTripMeta?.participants || ["我", "小明", "小華"];
@@ -29,21 +47,44 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
   const isUsingSharedExpenseBook = canUseExpense && hasEditPermission;
   const expenseMembers =
     isUsingSharedExpenseBook || !userEmail ? currentMembers : [userEmail];
+  const isSignedIn = Boolean(userEmail);
+  const isAssignedTrip =
+    adminProfile?.role === "trip_editor" && adminProfile.trip_id === selectedTripId;
+  const role = useMemo(
+    () =>
+      mapRole({
+        isSignedIn,
+        adminRole: adminProfile?.role ?? null,
+        isAssignedTrip,
+      }),
+    [adminProfile?.role, isAssignedTrip, isSignedIn],
+  );
+  const permission = useMemo(
+    () =>
+      createPermission({
+        role,
+        isSignedIn,
+        isAssignedTrip,
+      }),
+    [isAssignedTrip, isSignedIn, role],
+  );
 
-  const getBasePath = () => {
+  const getBasePath = useCallback(() => {
     const path = window.location.pathname;
     if (path.includes("/Travel-Companion")) return "/Travel-Companion/";
     return "/";
-  };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
       setUserEmail(session?.user?.email || null);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
       setUserEmail(session?.user?.email || null);
     });
 
@@ -51,16 +92,8 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
   }, [supabase]);
 
   useEffect(() => {
-    const basePath = getBasePath();
-    const url = `${basePath}trips/list.json`.replace(/\/+/g, "/");
-
-    fetch(url)
-      .then((response) => {
-        if (!response.ok) throw new Error();
-        return response.json();
-      })
-      .then((data: TripMeta[]) => {
-        const sortedTrips = sortTripsByDateDesc(data);
+    getTripMetas(supabase, getBasePath())
+      .then((sortedTrips) => {
         setTripOptions(sortedTrips);
 
         if (sortedTrips.length > 0) {
@@ -70,29 +103,28 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
         }
       })
       .catch((error) => console.error(error));
-  }, []);
+  }, [getBasePath, supabase]);
 
   useEffect(() => {
     if (!selectedTripId) return;
 
     const loadTripAndAuthData = async () => {
-      const basePath = getBasePath();
-      const detailPath =
-        selectedTripMeta?.detailPath || `/trips/${selectedTripId}.json`;
-      const url = `${basePath}${detailPath.replace(/^\//, "")}`.replace(
-        /\/+/g,
-        "/",
-      );
-
       try {
-        const response = await fetch(url);
-        if (response.ok) {
-          const tripData = (await response.json()) as TripDetail;
+        const tripData = await getTripDetail(
+          supabase,
+          getBasePath(),
+          selectedTripId,
+          selectedTripMeta,
+        );
+        if (tripData) {
           setCurrentTrip(tripData);
           setActiveDay(1);
 
           if (tripData.sidebarConfig?.length > 0) {
-            const validScreenIds = tripData.sidebarConfig.map((screen) => screen.id);
+            const validScreenIds = [
+              ...tripData.sidebarConfig.map((screen) => screen.id),
+              "privateChecklist",
+            ];
             if (!validScreenIds.includes(currentScreen)) {
               setCurrentScreen(tripData.sidebarConfig[0].id);
             }
@@ -100,6 +132,17 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
         }
       } catch (error) {
         console.error(error);
+      }
+
+      if (userEmail) {
+        getTripEditorEmails(supabase, selectedTripId)
+          .then(setCurrentTripEditorEmails)
+          .catch((error) => {
+            console.warn(error);
+            setCurrentTripEditorEmails([]);
+          });
+      } else {
+        setCurrentTripEditorEmails([]);
       }
 
       let profile: AdminUser | null = null;
@@ -151,6 +194,17 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
 
       setHasEditPermission(isAuthorized);
 
+      if (profile?.role === "super_admin") {
+        getSuperAdminEmails(supabase)
+          .then(setSuperAdminEmails)
+          .catch((error) => {
+            console.warn(error);
+            setSuperAdminEmails([]);
+          });
+      } else {
+        setSuperAdminEmails([]);
+      }
+
       if (isAuthorized) {
         localStorage.setItem(`auth_${selectedTripId}`, "true");
       }
@@ -170,10 +224,127 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     };
 
     void loadTripAndAuthData();
-  }, [currentScreen, selectedTripId, selectedTripMeta?.detailPath, supabase, userEmail]);
+  }, [currentScreen, getBasePath, selectedTripId, selectedTripMeta, supabase, userEmail]);
+
+  const createTrip = useCallback(
+    async (input: TripEditorInput, syncEditors = true) => {
+      const record = createTripRecord(input);
+      await saveTripRecordWithCloudSync(supabase, record);
+      if (syncEditors) {
+        await syncTripEditorEmails(supabase, record.meta.id, record.editorEmails);
+      }
+
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      setTripOptions(nextTrips);
+      setSelectedTripId(record.meta.id);
+      setCurrentTrip(record.detail);
+      setCurrentScreen("itinerary");
+      setActiveDay(1);
+      setIsLoading(false);
+    },
+    [getBasePath, supabase],
+  );
+
+  const updateTrip = useCallback(
+    async (input: TripEditorInput, syncEditors = true) => {
+      if (!selectedTripId || !selectedTripMeta || !currentTrip) return;
+
+      const record =
+        updateTripRecord(selectedTripId, input) ??
+        createTripRecordFromExisting(selectedTripMeta, currentTrip, input);
+
+      await saveTripRecordWithCloudSync(supabase, record);
+      if (syncEditors) {
+        await syncTripEditorEmails(supabase, record.meta.id, record.editorEmails);
+      }
+
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      setTripOptions(nextTrips);
+      setCurrentTrip(record.detail);
+      setCurrentScreen("itinerary");
+      setActiveDay(1);
+      setIsLoading(false);
+    },
+    [currentTrip, getBasePath, selectedTripId, selectedTripMeta, supabase],
+  );
+
+  const refreshTripOptionsAndSelect = useCallback(
+    async (preferredTripId?: string): Promise<{
+      didFindPreferredTrip: boolean;
+      selectedTrip: TripMeta | null;
+    }> => {
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      const preferredTrip = preferredTripId
+        ? nextTrips.find((trip) => trip.id === preferredTripId) ?? null
+        : null;
+      const fallbackTrip = findDefaultTrip(nextTrips) ?? nextTrips[0] ?? null;
+      const nextTrip = preferredTrip ?? fallbackTrip;
+
+      setTripOptions(nextTrips);
+      setSelectedTripId(nextTrip?.id ?? "");
+      setCurrentScreen("itinerary");
+      setActiveDay(1);
+
+      if (!nextTrip) {
+        setCurrentTrip(null);
+        setIsLoading(false);
+      }
+
+      if (nextTrip?.id === selectedTripId) {
+        setIsLoading(false);
+      }
+
+      return {
+        didFindPreferredTrip: Boolean(preferredTrip),
+        selectedTrip: nextTrip,
+      };
+    },
+    [getBasePath, selectedTripId, supabase],
+  );
+
+  const deleteTrip = useCallback(async (tripId: string) => {
+    if (!tripId) return;
+
+    await deleteTripRecordWithCloudSync(supabase, tripId);
+    const nextTrips = await getTripMetas(supabase, getBasePath());
+    const nextTrip = nextTrips.find((trip) => trip.id !== tripId) ?? nextTrips[0];
+
+    setTripOptions(nextTrips);
+    setSelectedTripId(nextTrip?.id ?? "");
+    setCurrentTrip(null);
+    setCurrentScreen("itinerary");
+    setActiveDay(1);
+    setIsLoading(Boolean(nextTrip));
+  }, [getBasePath, supabase]);
+
+  const saveCurrentTripDetail = useCallback(
+    async (nextTrip: TripDetail) => {
+      if (!selectedTripMeta) return;
+
+      const record = createTripRecordFromDetail(
+        selectedTripMeta,
+        nextTrip,
+        currentTripEditorEmails,
+      );
+
+      await saveTripRecordWithCloudSync(supabase, record);
+      const nextTrips = await getTripMetas(supabase, getBasePath());
+      setTripOptions(nextTrips);
+      setCurrentTrip(nextTrip);
+      setIsLoading(false);
+    },
+    [
+      currentTripEditorEmails,
+      getBasePath,
+      selectedTripMeta,
+      supabase,
+    ],
+  );
 
   return {
     userEmail,
+    userId,
+    setUserId,
     setUserEmail,
     tripOptions,
     selectedTripId,
@@ -200,5 +371,16 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     canUseExpense,
     isUsingSharedExpenseBook,
     expenseMembers,
+    isSignedIn,
+    isAssignedTrip,
+    role,
+    permission,
+    createTrip,
+    updateTrip,
+    deleteTrip,
+    refreshTripOptionsAndSelect,
+    saveCurrentTripDetail,
+    currentTripEditorEmails,
+    superAdminEmails,
   };
 }

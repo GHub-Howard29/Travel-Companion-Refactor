@@ -1,14 +1,25 @@
 import {
   Calendar,
+  CarFront,
   CheckSquare,
+  ClipboardCheck,
   FolderOpen,
   Home,
+  IdCard,
   LogIn,
   LogOut,
+  Pencil,
+  Plus,
   Wallet,
   X,
 } from "lucide-react";
-import type { AdminUser, TripDetail, TripMeta } from "../../types";
+import type {
+  AdminUser,
+  SidebarItemConfig,
+  SidebarItemType,
+  TripDetail,
+  TripMeta,
+} from "../../types";
 
 interface AppSidebarProps {
   isMenuOpen: boolean;
@@ -20,18 +31,36 @@ interface AppSidebarProps {
   hasEditPermission: boolean;
   adminProfile: AdminUser | null;
   currentScreen: string;
+  canCreateTrip: boolean;
+  canEditCurrentTrip: boolean;
+  onCreateTrip: () => void;
+  onEditTrip: () => void;
   onTripSelect: (tripId: string) => void;
   onLogout: () => Promise<void>;
   onGoogleLogin: () => Promise<void>;
-  onScreenSelect: (item: TripDetail["sidebarConfig"][number]) => void;
+  onScreenSelect: (item: SidebarItemConfig) => void;
 }
 
-const renderSidebarIcon = (type: string) => {
+const renderSidebarIcon = (item: SidebarItemConfig) => {
+  if (item.id === "trip_special_info") {
+    return item.title.includes("自駕") || item.title.includes("租車") ? (
+      <CarFront size={18} />
+    ) : (
+      <IdCard size={18} />
+    );
+  }
+
+  const type: SidebarItemType = item.type;
+
   switch (type) {
     case "itinerary":
       return <Calendar size={18} />;
     case "checklist":
       return <CheckSquare size={18} />;
+    case "privateChecklist":
+      return <ClipboardCheck size={18} />;
+    case "otherInfo":
+      return <FolderOpen size={18} />;
     case "expense":
       return <Wallet size={18} />;
     default:
@@ -49,11 +78,30 @@ export default function AppSidebar({
   hasEditPermission,
   adminProfile,
   currentScreen,
+  canCreateTrip,
+  canEditCurrentTrip,
+  onCreateTrip,
+  onEditTrip,
   onTripSelect,
   onLogout,
   onGoogleLogin,
   onScreenSelect,
 }: AppSidebarProps) {
+  const sidebarItems = currentTrip?.sidebarConfig.flatMap<SidebarItemConfig>((item) => {
+    if (item.type !== "checklist" || !userEmail) {
+      return [item];
+    }
+
+    return [
+      item,
+      {
+        id: "privateChecklist",
+        title: "私人確認清單",
+        type: "privateChecklist",
+      },
+    ];
+  });
+
   return (
     <>
       {isMenuOpen && (
@@ -97,11 +145,38 @@ export default function AppSidebar({
                 </option>
               ))}
             </select>
+            {(canCreateTrip || canEditCurrentTrip) && (
+              <div
+                className={`mt-2 grid gap-2 ${
+                  canCreateTrip && canEditCurrentTrip ? "grid-cols-2" : "grid-cols-1"
+                }`}
+              >
+                {canCreateTrip && (
+                <button
+                  type="button"
+                  onClick={onCreateTrip}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                >
+                  <Plus size={14} /> 新增旅程
+                </button>
+                )}
+                {canEditCurrentTrip && (
+                <button
+                  type="button"
+                  onClick={onEditTrip}
+                  disabled={!currentTrip}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  <Pencil size={14} /> 編輯旅程
+                </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-          {currentTrip?.sidebarConfig.map((item) => {
+          {sidebarItems?.map((item) => {
             const isActive = currentScreen === item.id;
             return (
               <button
@@ -114,7 +189,7 @@ export default function AppSidebar({
                 }`}
               >
                 <div className={isActive ? "text-white" : "text-slate-400"}>
-                  {renderSidebarIcon(item.type)}
+                  {renderSidebarIcon(item)}
                 </div>
                 <span>{item.title}</span>
               </button>
