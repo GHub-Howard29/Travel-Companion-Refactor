@@ -16,8 +16,13 @@ import {
 
 type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
 
+const RELEASE_NOTICE_STORAGE_KEY = "travel_companion_seen_app_version";
+
 export const useAppUpdate = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [releaseNoticeVisible, setReleaseNoticeVisible] = useState(
+    () => localStorage.getItem(RELEASE_NOTICE_STORAGE_KEY) !== APP_VERSION,
+  );
   const dismissedRef = useRef(false);
   const updateServiceWorkerRef = useRef<UpdateServiceWorker | null>(null);
 
@@ -38,22 +43,38 @@ export const useAppUpdate = () => {
     });
   }, []);
 
-  const update = useCallback(() => {
-    void updateServiceWorkerRef.current?.(true);
+  const markReleaseNoticeSeen = useCallback(() => {
+    localStorage.setItem(RELEASE_NOTICE_STORAGE_KEY, APP_VERSION);
+    setReleaseNoticeVisible(false);
   }, []);
+
+  const update = useCallback(() => {
+    if (updateAvailable) {
+      void updateServiceWorkerRef.current?.(true);
+      return;
+    }
+
+    markReleaseNoticeSeen();
+  }, [markReleaseNoticeSeen, updateAvailable]);
 
   const dismiss = useCallback(() => {
     dismissedRef.current = true;
+    markReleaseNoticeSeen();
     setUpdateAvailable(false);
-  }, []);
+  }, [markReleaseNoticeSeen]);
+
+  const isPromptVisible = updateAvailable || releaseNoticeVisible;
 
   return {
-    updateAvailable,
+    updateAvailable: isPromptVisible,
+    hasServiceWorkerUpdate: updateAvailable,
     currentVersion: APP_VERSION,
     latestVersion: APP_VERSION,
     releaseDate: RELEASE_DATE,
     releaseNotes: RELEASE_NOTES,
     forceUpdate: FORCE_UPDATE,
+    primaryActionLabel: updateAvailable ? "立即更新" : "開始使用",
+    secondaryActionLabel: updateAvailable ? "稍後更新" : "稍後查看",
     update,
     dismiss,
   };

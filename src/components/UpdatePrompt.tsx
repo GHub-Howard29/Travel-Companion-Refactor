@@ -8,26 +8,36 @@ import { RefreshCw, X } from "lucide-react";
 
 type UpdatePromptProps = {
   isOpen: boolean;
+  hasServiceWorkerUpdate: boolean;
   currentVersion: string;
   latestVersion: string;
   releaseDate: string;
   releaseNotes: string[];
   forceUpdate: boolean;
+  primaryActionLabel: string;
+  secondaryActionLabel: string;
   onUpdate: () => void;
   onDismiss: () => void;
 };
 
 export function UpdatePrompt({
   isOpen,
+  hasServiceWorkerUpdate,
   currentVersion,
   latestVersion,
   releaseDate,
   releaseNotes,
   forceUpdate,
+  primaryActionLabel,
+  secondaryActionLabel,
   onUpdate,
   onDismiss,
 }: UpdatePromptProps) {
   if (!isOpen) return null;
+
+  const updateMessage = hasServiceWorkerUpdate
+    ? "本次更新必須安裝才能繼續使用"
+    : "本次為重大更新，請先查看更新內容";
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[80] px-4 pb-4 sm:bottom-6 sm:px-6">
@@ -40,9 +50,7 @@ export function UpdatePrompt({
             <div>
               <h2 className="text-base font-bold text-slate-900">發現新版本</h2>
               <p className="text-xs text-slate-500">
-                {forceUpdate
-                  ? "本次更新必須安裝才能繼續使用"
-                  : "更新後會重新載入並進入新版"}
+                {forceUpdate ? updateMessage : "請先查看本次更新內容"}
               </p>
             </div>
           </div>
@@ -80,6 +88,10 @@ export function UpdatePrompt({
               ))}
             </ul>
           </div>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            已儲存的旅程、清單、記帳與附件資料不會因更新被清除。若目前正在編輯表單且尚未儲存，立即更新會重新載入 App，未儲存內容會遺失，更新後需重新建立。
+          </div>
         </div>
 
         <div
@@ -93,7 +105,7 @@ export function UpdatePrompt({
               onClick={onDismiss}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50"
             >
-              稍後更新
+              {secondaryActionLabel}
             </button>
           )}
           <button
@@ -101,7 +113,7 @@ export function UpdatePrompt({
             onClick={onUpdate}
             className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-800"
           >
-            立即更新
+            {primaryActionLabel}
           </button>
         </div>
       </div>

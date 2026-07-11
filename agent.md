@@ -234,6 +234,8 @@ Trip Management：
 - 只有資料不相容、安全性修正、Supabase schema / RLS 權限規則變更、Sync / Pending Queue 重大資料風險，才建議啟用強制更新。
 - 若 Product Owner 說「通過測試」或「測試完成」，Codex 必須主動告知目前版本號，建議下一個版本號，並要求 Product Owner 提供更新內容，或依本次變更提出建議更新內容。
 - Product Owner 通過版本號、發布日期、更新內容與是否強制更新後，Codex 才更新 `src/config/appVersion.ts`、`src/config/versionHistory.ts` 與必要文件。
+- 每次發布後，App 至少需顯示一次版本更新提示。小更新可稍後，大更新不提供稍後；若使用者已直接進入新版，也需先顯示本次版本資訊。
+- 更新提示必須說明已儲存資料不會被更新清除，但編輯中尚未儲存的表單內容會因 reload 遺失，需更新後重新建立。
 - 發布設定欄位：
   - `APP_VERSION`：目前發布版本。
   - `RELEASE_DATE`：發布日期，格式 `YYYY-MM-DD`。

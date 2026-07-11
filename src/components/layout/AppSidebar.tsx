@@ -6,6 +6,7 @@ import {
   FolderOpen,
   Home,
   IdCard,
+  Info,
   LogIn,
   LogOut,
   Pencil,
@@ -39,6 +40,8 @@ interface AppSidebarProps {
   onLogout: () => Promise<void>;
   onGoogleLogin: () => Promise<void>;
   onScreenSelect: (item: SidebarItemConfig) => void;
+  appVersion: string;
+  onOpenVersionInfo: () => void;
 }
 
 const renderSidebarIcon = (item: SidebarItemConfig) => {
@@ -86,6 +89,8 @@ export default function AppSidebar({
   onLogout,
   onGoogleLogin,
   onScreenSelect,
+  appVersion,
+  onOpenVersionInfo,
 }: AppSidebarProps) {
   const sidebarItems = currentTrip?.sidebarConfig.flatMap<SidebarItemConfig>((item) => {
     if (item.type !== "checklist" || !userEmail) {
@@ -253,6 +258,20 @@ export default function AppSidebar({
               )}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={onOpenVersionInfo}
+            className="mt-3 flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+          >
+            <span className="inline-flex items-center gap-1.5 font-bold">
+              <Info size={13} />
+              版本資訊
+            </span>
+            <span className="font-mono text-[11px] font-bold text-emerald-700">
+              v{appVersion}
+            </span>
+          </button>
         </div>
       </div>
     </>

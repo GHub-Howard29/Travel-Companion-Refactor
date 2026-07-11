@@ -29,6 +29,7 @@ import { PrivateChecklistPage } from "./components/PrivateChecklistPage";
 import { OtherInfoPage } from "./components/OtherInfoPage";
 import { TripEditorModal } from "./components/TripEditorModal";
 import { UpdatePrompt } from "./components/UpdatePrompt";
+import { VersionInfoModal } from "./components/VersionInfoModal";
 import useExpenseBook from "./hooks/useExpenseBook";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 import useTripWorkspace from "./hooks/useTripWorkspace";
@@ -61,6 +62,7 @@ const createEmptyItineraryDraft = (): ItineraryItem => ({
 export default function App() {
   const {
     updateAvailable,
+    hasServiceWorkerUpdate,
     currentVersion,
     latestVersion,
     releaseDate,
@@ -110,6 +112,7 @@ export default function App() {
   } = useTripWorkspace({ supabase });
   const [tripEditorMode, setTripEditorMode] = useState<"create" | "edit">("create");
   const [isTripEditorOpen, setIsTripEditorOpen] = useState(false);
+  const [isVersionInfoOpen, setIsVersionInfoOpen] = useState(false);
   const [checklistCopySources, setChecklistCopySources] = useState<
     Array<{ tripId: string; title: string; items: ChecklistItem[] }>
   >([]);
@@ -481,6 +484,7 @@ export default function App() {
     <AppContext.Provider value={appContextValue}>
     <UpdatePrompt
       isOpen={updateAvailable}
+      hasServiceWorkerUpdate={hasServiceWorkerUpdate}
       currentVersion={currentVersion}
       latestVersion={latestVersion}
       releaseDate={releaseDate}
@@ -488,6 +492,14 @@ export default function App() {
       forceUpdate={forceUpdate}
       onUpdate={update}
       onDismiss={dismiss}
+    />
+    <VersionInfoModal
+      isOpen={isVersionInfoOpen}
+      currentVersion={currentVersion}
+      releaseDate={releaseDate}
+      releaseNotes={releaseNotes}
+      forceUpdate={forceUpdate}
+      onClose={() => setIsVersionInfoOpen(false)}
     />
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased overflow-x-hidden">
       <AppSidebar
@@ -528,6 +540,8 @@ export default function App() {
         onLogout={handleLogout}
         onGoogleLogin={handleGoogleLogin}
         onScreenSelect={handleScreenSelect}
+        appVersion={currentVersion}
+        onOpenVersionInfo={() => setIsVersionInfoOpen(true)}
       />
 
       {isTripEditorOpen && (
