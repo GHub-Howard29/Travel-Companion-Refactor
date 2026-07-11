@@ -11,8 +11,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'inline',
+      registerType: 'prompt',
+      injectRegister: false,
       // 👇 【關鍵修正】新增 Workbox 設定，確保 json、svg 等檔案納入離線快取
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],

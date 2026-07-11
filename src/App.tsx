@@ -28,7 +28,9 @@ import { ChecklistPage } from "./components/ChecklistPage";
 import { PrivateChecklistPage } from "./components/PrivateChecklistPage";
 import { OtherInfoPage } from "./components/OtherInfoPage";
 import { TripEditorModal } from "./components/TripEditorModal";
+import { UpdatePrompt } from "./components/UpdatePrompt";
 import useExpenseBook from "./hooks/useExpenseBook";
+import { useAppUpdate } from "./hooks/useAppUpdate";
 import useTripWorkspace from "./hooks/useTripWorkspace";
 import { AppContext } from "./app/context/AppContext";
 import { getTripDetail } from "./services/tripRepository";
@@ -57,6 +59,14 @@ const createEmptyItineraryDraft = (): ItineraryItem => ({
 });
 
 export default function App() {
+  const {
+    updateAvailable,
+    currentVersion,
+    latestVersion,
+    releaseNotes,
+    update,
+    dismiss,
+  } = useAppUpdate();
   const {
     userEmail,
     userId,
@@ -467,6 +477,14 @@ export default function App() {
 
   return (
     <AppContext.Provider value={appContextValue}>
+    <UpdatePrompt
+      isOpen={updateAvailable}
+      currentVersion={currentVersion}
+      latestVersion={latestVersion}
+      releaseNotes={releaseNotes}
+      onUpdate={update}
+      onDismiss={dismiss}
+    />
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased overflow-x-hidden">
       <AppSidebar
         isMenuOpen={isMenuOpen}
