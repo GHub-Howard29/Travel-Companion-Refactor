@@ -20,6 +20,7 @@ import type {
   SidebarItemType,
   TripDetail,
   TripMeta,
+  TripMode,
 } from "../../types";
 
 interface AppSidebarProps {
@@ -44,9 +45,15 @@ interface AppSidebarProps {
   onOpenVersionInfo: () => void;
 }
 
-const renderSidebarIcon = (item: SidebarItemConfig) => {
-  if (item.id === "trip_special_info") {
-    return item.title.includes("自駕") || item.title.includes("租車") ? (
+const renderSidebarIcon = (item: SidebarItemConfig, tripMode?: TripMode) => {
+  const isSpecialInfoItem = item.id === "trip_special_info" || item.type === "text";
+
+  if (isSpecialInfoItem) {
+    const isSelfGuided =
+      tripMode === "selfGuided" ||
+      (!tripMode && (item.title.includes("自駕") || item.title.includes("租車")));
+
+    return isSelfGuided ? (
       <CarFront size={18} />
     ) : (
       <IdCard size={18} />
@@ -194,7 +201,7 @@ export default function AppSidebar({
                 }`}
               >
                 <div className={isActive ? "text-white" : "text-slate-400"}>
-                  {renderSidebarIcon(item)}
+                  {renderSidebarIcon(item, currentTrip?.content.mode)}
                 </div>
                 <span>{item.title}</span>
               </button>
