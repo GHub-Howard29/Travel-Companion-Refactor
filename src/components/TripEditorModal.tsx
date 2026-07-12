@@ -31,6 +31,34 @@ const splitLines = (value: string): string[] => {
 
 const toTextareaValue = (items: string[]): string => items.join("\n");
 
+const toParticipantEmailText = (
+  participantEmailMap?: Record<string, string>,
+): string => {
+  if (!participantEmailMap) return "";
+
+  return Object.entries(participantEmailMap)
+    .map(([participant, email]) => `${participant}=${email}`)
+    .join("\n");
+};
+
+const parseParticipantEmailMap = (value: string): Record<string, string> => {
+  return Object.fromEntries(
+    value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [participant, ...emailParts] = line.split("=");
+
+        return [
+          participant.trim(),
+          emailParts.join("=").trim().toLowerCase(),
+        ] as const;
+      })
+      .filter(([participant, email]) => participant && email),
+  );
+};
+
 const getInitialTripMode = (
   trip: TripMeta | null,
   tripDetail: TripDetail | null,
@@ -78,6 +106,11 @@ export const TripEditorModal = ({
   const [participants, setParticipants] = useState(
     toTextareaValue(trip?.participants ?? []),
   );
+  const [participantEmailText, setParticipantEmailText] = useState(
+    toParticipantEmailText(
+      trip?.participantEmailMap ?? tripDetail?.content.participantEmailMap,
+    ),
+  );
   const [editorEmailText, setEditorEmailText] = useState(
     toTextareaValue(editorEmails),
   );
@@ -111,6 +144,29 @@ export const TripEditorModal = ({
       return;
     }
 
+    const participantEmailMap = parseParticipantEmailMap(participantEmailText);
+    const participantSet = new Set(nextParticipants);
+    const invalidParticipantNames = Object.keys(participantEmailMap).filter(
+      (participant) => !participantSet.has(participant),
+    );
+    const invalidParticipantEmails = Object.entries(participantEmailMap)
+      .filter(([, email]) => !email.includes("@"))
+      .map(([participant]) => participant);
+
+    if (invalidParticipantNames.length > 0) {
+      const message = `參與者 Email 對應表中找不到這些參與者：${invalidParticipantNames.join("、")}。請先確認名稱和參與者欄位完全一致。`;
+      setFormError(message);
+      alert(message);
+      return;
+    }
+
+    if (invalidParticipantEmails.length > 0) {
+      const message = `以下參與者的 Email 格式不正確：${invalidParticipantEmails.join("、")}。`;
+      setFormError(message);
+      alert(message);
+      return;
+    }
+
     const nextEditorEmails = splitLines(editorEmailText).map((email) =>
       email.toLowerCase(),
     );
@@ -136,6 +192,7 @@ export const TripEditorModal = ({
       dayCount,
       mode: tripMode,
       participants: nextParticipants,
+      participantEmailMap,
       editorEmails: nextEditorEmails,
       currencyCode,
       currencySymbol,
@@ -247,6 +304,22 @@ export const TripEditorModal = ({
             placeholder="Howard&#10;Carol"
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
+          />
+        </label>
+
+        <label className="block">
+          <span className="flex items-center justify-between gap-2 text-xs font-bold text-slate-500">
+            <span>參與者對應登入 Email</span>
+            <span className="font-medium text-slate-400">
+              用於鎖定共用帳本付款人
+            </span>
+          </span>
+          <textarea
+            value={participantEmailText}
+            onChange={(event) => setParticipantEmailText(event.target.value)}
+            rows={3}
+            placeholder="Howard=howard@example.com&#10;Carol=carol@example.com"
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </label>
 

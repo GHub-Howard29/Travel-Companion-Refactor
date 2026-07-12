@@ -38,8 +38,17 @@ interface UseExpenseBookOptions {
   currentCurrencyCode: string;
   currentCurrencySymbol: string;
   expenseMembers: string[];
+  lockedPayerName: string | null;
   tripTitle: string;
 }
+
+const shouldRecoverLocalAttachment = (item: ExpenseItem) => {
+  return (
+    item.attachment_status !== "synced" &&
+    item.attachment_status !== "none" &&
+    Boolean(item.attachment_name)
+  );
+};
 
 export default function useExpenseBook({
   supabase,
@@ -50,6 +59,7 @@ export default function useExpenseBook({
   currentCurrencyCode,
   currentCurrencySymbol,
   expenseMembers,
+  lockedPayerName,
   tripTitle,
 }: UseExpenseBookOptions) {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
@@ -73,7 +83,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
     local.map(async (item) => {
       if (
         item.local_attachment_id ||
-        item.attachment_status === "none"
+        !shouldRecoverLocalAttachment(item)
       ) {
         return item;
       }
@@ -116,6 +126,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
   const [activeCurrency, setActiveCurrency] = useState("ALL");
   const [formCurrency, setFormCurrency] = useState("JPY");
   const deleteConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expenseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ================================
    📦 帳本統一載入核心（新增）
@@ -149,7 +160,7 @@ const loadExpenseBook = useCallback(async (bookId: string) => {
   (data as ExpenseItem[]).map(async (item) => {
     const recoveredId =
       item.local_attachment_id ??
-      (item.attachment_status === "local_pending"
+      (shouldRecoverLocalAttachment(item)
         ? await findLocalAttachmentIdByExpense(
             String(item.id),
             bookId,
@@ -205,6 +216,68 @@ useEffect(() => {
 
   return () => window.clearTimeout(timer);
 }, [expenseBookTripId, loadExpenseBook]);
+
+useEffect(() => {
+  if (!expenseBookTripId || !isUsingSharedExpenseBook || !userEmail) return;
+
+  const refreshExpenseBook = () => {
+    if (!navigator.onLine) return;
+    void loadExpenseBook(expenseBookTripId);
+  };
+
+  const scheduleRefresh = () => {
+    if (expenseRefreshTimerRef.current) {
+      clearTimeout(expenseRefreshTimerRef.current);
+    }
+
+    expenseRefreshTimerRef.current = setTimeout(refreshExpenseBook, 600);
+  };
+
+  const channel = supabase
+    .channel(`travel-companion-expenses-${expenseBookTripId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "expenses",
+        filter: `trip_id=eq.${expenseBookTripId}`,
+      },
+      scheduleRefresh,
+    )
+    .subscribe();
+
+  const interval = window.setInterval(refreshExpenseBook, 30_000);
+  const handleFocus = () => refreshExpenseBook();
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      refreshExpenseBook();
+    }
+  };
+
+  window.addEventListener("focus", handleFocus);
+  window.addEventListener("online", handleFocus);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return () => {
+    if (expenseRefreshTimerRef.current) {
+      clearTimeout(expenseRefreshTimerRef.current);
+      expenseRefreshTimerRef.current = null;
+    }
+
+    window.clearInterval(interval);
+    window.removeEventListener("focus", handleFocus);
+    window.removeEventListener("online", handleFocus);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    void supabase.removeChannel(channel);
+  };
+}, [
+  expenseBookTripId,
+  isUsingSharedExpenseBook,
+  loadExpenseBook,
+  supabase,
+  userEmail,
+]);
 
   const handleAttachmentSelection = async (
     file: File | undefined,
@@ -398,7 +471,7 @@ useEffect(() => {
       title: newTitle,
       amount: amountNum,
       payer: isUsingSharedExpenseBook
-        ? newPayer || expenseMembers[0]
+        ? lockedPayerName || newPayer || expenseMembers[0]
         : userEmail,
       currency: formCurrency,
       ...attachmentFields,
@@ -837,7 +910,7 @@ useEffect(() => {
         )
           return null;
         if (hasLocalAttachmentId(item)) return item;
-        if (item.attachment_status === "local_pending") {
+        if (shouldRecoverLocalAttachment(item)) {
           const recoveredId = await findLocalAttachmentIdByExpense(
             String(item.id),
             expenseBookTripId,
@@ -859,7 +932,18 @@ useEffect(() => {
     );
 
     if (filteredPendingItems.length === 0) {
-      alert("目前沒有尚未同步的照片。");
+      const failedItemsWithoutLocalPhoto = expenses.some(
+        (item) =>
+          item.attachment_status === "upload_failed" &&
+          Boolean(item.attachment_name) &&
+          !item.local_attachment_id,
+      );
+
+      alert(
+        failedItemsWithoutLocalPhoto
+          ? "有照片曾同步失敗，但此裝置已找不到可重試上傳的本機照片。請進入編輯後重新拍照或選擇照片。"
+          : "目前沒有尚未同步的照片。",
+      );
       return;
     }
 
@@ -969,20 +1053,37 @@ useEffect(() => {
         .eq("trip_id", expenseBookTripId)
         .order("created_at", { ascending: true });
       if (refreshedData) {
-        const hydrated = (refreshedData as ExpenseItem[]).map((item) => ({
-          ...item,
-          local_attachment_id: localStorage.getItem(
-            toBookStorageKey(expenseBookTripId),
-          )
-            ? JSON.parse(
-                localStorage.getItem(toBookStorageKey(expenseBookTripId)) ||
-                  "[]",
-              ).find((x: ExpenseItem) => String(x.id) === String(item.id))
-                ?.local_attachment_id ||
+        const cachedItems = readStoredExpenses(
+          toBookStorageKey(expenseBookTripId),
+          expenseBookTripId,
+          currentCurrencyCode,
+        );
+        const cachedLocalAttachmentIds = new Map(
+          cachedItems.map((item) => [
+            String(item.id),
+            item.local_attachment_id || null,
+          ]),
+        );
+        const hydrated = await Promise.all(
+          (refreshedData as ExpenseItem[]).map(async (item) => {
+            const cachedLocalAttachmentId =
+              cachedLocalAttachmentIds.get(String(item.id)) || null;
+            const recoveredId =
               item.local_attachment_id ||
-              null
-            : item.local_attachment_id || null,
-        }));
+              cachedLocalAttachmentId ||
+              (shouldRecoverLocalAttachment(item)
+                ? await findLocalAttachmentIdByExpense(
+                    String(item.id),
+                    expenseBookTripId,
+                  )
+                : null);
+
+            return {
+              ...item,
+              local_attachment_id: recoveredId,
+            };
+          }),
+        );
         setExpenses(hydrated);
         localStorage.setItem(
           toBookStorageKey(expenseBookTripId),
@@ -995,7 +1096,16 @@ useEffect(() => {
     localStorage.setItem(`attachment_last_sync_${expenseBookTripId}`, now);
     setLastAttachmentSyncStamp({ bookId: expenseBookTripId, value: now });
     setIsSyncingAttachments(false);
-    alert("照片同步完成。若有失敗項目，清單會保留待同步狀態供下次重試。");
+    const failedCount = savedItems.filter(
+      (item) => item.attachment_status !== "synced",
+    ).length;
+    const successCount = savedItems.length - failedCount;
+
+    alert(
+      failedCount > 0
+        ? `照片同步完成 ${successCount} 筆，失敗 ${failedCount} 筆。失敗項目會保留本機照片供下次重試；若仍無法開啟，請重新拍照或選擇照片。`
+        : `照片同步完成，共 ${successCount} 筆。`,
+    );
   };
 
   const buildExpenseXlsx = async () => {

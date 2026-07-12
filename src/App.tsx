@@ -30,6 +30,8 @@ import { OtherInfoPage } from "./components/OtherInfoPage";
 import { TripEditorModal } from "./components/TripEditorModal";
 import { UpdatePrompt } from "./components/UpdatePrompt";
 import { VersionInfoModal } from "./components/VersionInfoModal";
+import { InstallAppPrompt } from "./components/InstallAppPrompt";
+import { LoginSafetyModal } from "./components/LoginSafetyModal";
 import useExpenseBook from "./hooks/useExpenseBook";
 import { useAppUpdate } from "./hooks/useAppUpdate";
 import useTripWorkspace from "./hooks/useTripWorkspace";
@@ -58,6 +60,12 @@ const createEmptyItineraryDraft = (): ItineraryItem => ({
   desc: "",
   location: "",
 });
+
+const LEGACY_SPECIAL_INFO_SCREEN_IDS = new Set([
+  "trip_special_info",
+  "leader_info",
+  "custom_info",
+]);
 
 export default function App() {
   const {
@@ -98,6 +106,7 @@ export default function App() {
     canUseExpense,
     isUsingSharedExpenseBook,
     expenseMembers,
+    currentUserParticipantName,
     isSignedIn,
     isAssignedTrip,
     role,
@@ -113,6 +122,7 @@ export default function App() {
   const [tripEditorMode, setTripEditorMode] = useState<"create" | "edit">("create");
   const [isTripEditorOpen, setIsTripEditorOpen] = useState(false);
   const [isVersionInfoOpen, setIsVersionInfoOpen] = useState(false);
+  const [isLoginSafetyOpen, setIsLoginSafetyOpen] = useState(false);
   const [checklistCopySources, setChecklistCopySources] = useState<
     Array<{ tripId: string; title: string; items: ChecklistItem[] }>
   >([]);
@@ -175,6 +185,7 @@ export default function App() {
     currentCurrencyCode,
     currentCurrencySymbol,
     expenseMembers,
+    lockedPayerName: currentUserParticipantName,
     tripTitle: currentTrip?.title || selectedTripMeta?.title || selectedTripId || "travel",
   });
 
@@ -201,6 +212,7 @@ export default function App() {
 
   // 登入 / 登出
   const handleGoogleLogin = async () => {
+    setIsLoginSafetyOpen(false);
     const currentRedirectUrl = window.location.origin + getBasePath();
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -231,6 +243,12 @@ export default function App() {
     if (!selectedTripMeta) return;
     applyTripDefaults(selectedTripMeta);
   }, [applyTripDefaults, selectedTripMeta]);
+
+  useEffect(() => {
+    if (currentUserParticipantName) {
+      setNewPayer(currentUserParticipantName);
+    }
+  }, [currentUserParticipantName, setNewPayer]);
 
   const handleScreenSelect = (item: SidebarItemConfig) => {
     if ((item.type === "expense" || item.type === "privateChecklist") && !userEmail) {
@@ -270,10 +288,27 @@ export default function App() {
     ],
   );
 
+  const isSpecialInfoSidebarItem = (
+    item: SidebarItemConfig | undefined,
+  ): boolean => {
+    if (!item) return false;
+
+    return (
+      LEGACY_SPECIAL_INFO_SCREEN_IDS.has(item.id) ||
+      (item.type === "text" &&
+        (item.title.includes("領隊") ||
+          item.title.includes("導遊") ||
+          item.title.includes("自駕") ||
+          item.title.includes("租車")))
+    );
+  };
+
   const getCurrentScreenType = () => {
     if (currentScreen === "privateChecklist") return "privateChecklist";
 
-    return currentTrip?.sidebarConfig.find((s) => s.id === currentScreen)?.type;
+    const item = currentTrip?.sidebarConfig.find((s) => s.id === currentScreen);
+
+    return isSpecialInfoSidebarItem(item) ? "otherInfo" : item?.type;
   };
   const openCreateTrip = () => {
     setTripEditorMode("create");
@@ -421,11 +456,13 @@ export default function App() {
   const currentSidebarItem = currentTrip?.sidebarConfig.find(
     (item) => item.id === currentScreen,
   );
-  const isSpecialInfoPage = currentScreen === "trip_special_info";
+  const isSpecialInfoPage = isSpecialInfoSidebarItem(currentSidebarItem);
+  const isSelfGuidedSpecialInfo =
+    currentTrip?.content.mode === "selfGuided" ||
+    currentSidebarItem?.title.includes("自駕") === true ||
+    currentSidebarItem?.title.includes("租車") === true;
   const specialInfoFolderId =
-    currentTrip?.content.mode === "selfGuided"
-      ? "other-info-transport"
-      : "other-info-other";
+    isSelfGuidedSpecialInfo ? "other-info-transport" : "other-info-other";
 
   useEffect(() => {
     let isActive = true;
@@ -496,6 +533,12 @@ export default function App() {
       onUpdate={update}
       onDismiss={dismiss}
     />
+    <InstallAppPrompt />
+    <LoginSafetyModal
+      isOpen={isLoginSafetyOpen}
+      onClose={() => setIsLoginSafetyOpen(false)}
+      onConfirm={handleGoogleLogin}
+    />
     <VersionInfoModal
       isOpen={isVersionInfoOpen}
       currentVersion={currentVersion}
@@ -541,7 +584,10 @@ export default function App() {
           });
         }}
         onLogout={handleLogout}
-        onGoogleLogin={handleGoogleLogin}
+        onGoogleLogin={() => {
+          setIsLoginSafetyOpen(true);
+          return Promise.resolve();
+        }}
         onScreenSelect={handleScreenSelect}
         appVersion={currentVersion}
         onOpenVersionInfo={() => setIsVersionInfoOpen(true)}
@@ -813,7 +859,7 @@ export default function App() {
             {/* 4. 其他資訊模組 */}
             {currentScreenType === "otherInfo" && (
               <OtherInfoPage
-                key={selectedTripId}
+                key={`${selectedTripId}-${currentScreen}`}
                 tripId={selectedTripId}
                 canEdit={permission.canEditReference}
                 currentRole={role}
@@ -839,6 +885,7 @@ export default function App() {
                 currentCurrencyCode={currentCurrencyCode}
                 currentCurrencySymbol={currentCurrencySymbol}
                 expenseMembers={expenseMembers}
+                lockedPayerName={currentUserParticipantName}
                 totalExpense={totalExpense}
                 averageExpense={averageExpense}
                 paitAmounts={paitAmounts}

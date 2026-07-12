@@ -27,6 +27,7 @@ interface ExpenseScreenProps {
   currentCurrencyCode: string;
   currentCurrencySymbol: string;
   expenseMembers: string[];
+  lockedPayerName: string | null;
   totalExpense: number;
   averageExpense: number;
   paitAmounts: Record<string, number>;
@@ -81,6 +82,7 @@ export default function ExpenseScreen({
   currentCurrencyCode,
   currentCurrencySymbol,
   expenseMembers,
+  lockedPayerName,
   totalExpense,
   averageExpense,
   paitAmounts,
@@ -349,29 +351,49 @@ export default function ExpenseScreen({
                 required
               />
             </div>
-            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 hover:border-amber-300 hover:bg-amber-50">
-              <span className="inline-flex min-w-0 items-center gap-2">
-                <Camera size={16} className="text-amber-600" />
-                <span className="truncate">
-                  {newAttachmentFile ? newAttachmentFile.name : "拍照 / 選擇照片附件"}
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2">
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm text-slate-600">
+                <span className="min-w-0 truncate">
+                  {newAttachmentFile ? newAttachmentFile.name : "照片附件"}
                 </span>
-              </span>
-              <span className="shrink-0 text-[11px] font-bold text-slate-400">
-                {newAttachmentFile
-                  ? formatFileSize(newAttachmentFile.size)
-                  : "自動壓縮 <= 1MB"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  void handleAttachmentSelection(file, setNewAttachmentFile);
-                  e.currentTarget.value = "";
-                }}
-              />
-            </label>
+                <span className="shrink-0 text-[11px] font-bold text-slate-400">
+                  {newAttachmentFile
+                    ? formatFileSize(newAttachmentFile.size)
+                    : "自動壓縮 <= 1MB"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">
+                  <Camera size={15} />
+                  拍照
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      void handleAttachmentSelection(file, setNewAttachmentFile);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                  <Paperclip size={15} />
+                  相簿
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      void handleAttachmentSelection(file, setNewAttachmentFile);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
             {newAttachmentFile && (
               <button
                 type="button"
@@ -390,13 +412,25 @@ export default function ExpenseScreen({
                 <button
                   key={m}
                   type="button"
+                  disabled={Boolean(lockedPayerName)}
                   onClick={() => setNewPayer(m)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${newPayer === m || (!isUsingSharedExpenseBook && m === userEmail) ? "bg-amber-600 border-amber-600 text-white" : "bg-white border-slate-200 text-slate-600"}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:cursor-not-allowed ${
+                    newPayer === m ||
+                    lockedPayerName === m ||
+                    (!isUsingSharedExpenseBook && m === userEmail)
+                      ? "bg-amber-600 border-amber-600 text-white"
+                      : "bg-white border-slate-200 text-slate-600"
+                  } ${lockedPayerName && lockedPayerName !== m ? "opacity-45" : ""}`}
                 >
                   {m}
                 </button>
               ))}
             </div>
+            {lockedPayerName && (
+              <span className="text-[11px] font-semibold text-amber-700">
+                已依登入 Email 鎖定
+              </span>
+            )}
             <button
               type="submit"
               className="ml-auto flex items-center gap-1 bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-lg"
@@ -506,39 +540,65 @@ export default function ExpenseScreen({
                           </button>
                         ))}
                       </div>
-                      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-dashed border-amber-300 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-amber-50">
-                        <span className="inline-flex min-w-0 items-center gap-2">
-                          <Camera size={16} className="text-amber-600" />
-                          <span className="truncate">
+                      <div className="rounded-lg border border-dashed border-amber-300 bg-white px-3 py-2">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-sm text-slate-600">
+                          <span className="min-w-0 truncate">
                             {editAttachmentFile
                               ? editAttachmentFile.name
                               : isAttachmentMarkedForRemoval
                                 ? "附件將於儲存後移除"
-                              : item.attachment_name || "補拍 / 更換照片附件"}
+                                : item.attachment_name || "照片附件"}
                           </span>
-                        </span>
-                        <span className="shrink-0 text-[11px] font-bold text-slate-400">
-                          {editAttachmentFile
-                            ? formatFileSize(editAttachmentFile.size)
-                            : "自動壓縮 <= 1MB"}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              onRestoreEditAttachment(String(item.id));
-                            }
-                            void handleAttachmentSelection(
-                              file,
-                              setEditAttachmentFile,
-                            );
-                            e.currentTarget.value = "";
-                          }}
-                        />
-                      </label>
+                          <span className="shrink-0 text-[11px] font-bold text-slate-400">
+                            {editAttachmentFile
+                              ? formatFileSize(editAttachmentFile.size)
+                              : "自動壓縮 <= 1MB"}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">
+                            <Camera size={15} />
+                            補拍
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  onRestoreEditAttachment(String(item.id));
+                                }
+                                void handleAttachmentSelection(
+                                  file,
+                                  setEditAttachmentFile,
+                                );
+                                e.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                            <Paperclip size={15} />
+                            相簿
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  onRestoreEditAttachment(String(item.id));
+                                }
+                                void handleAttachmentSelection(
+                                  file,
+                                  setEditAttachmentFile,
+                                );
+                                e.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
                       {hasAttachment &&
                         !editAttachmentFile &&
                         !isAttachmentMarkedForRemoval && (

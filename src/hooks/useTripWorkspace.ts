@@ -40,13 +40,33 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
   const [superAdminEmails, setSuperAdminEmails] = useState<string[]>([]);
 
   const selectedTripMeta = tripOptions.find((trip) => trip.id === selectedTripId);
-  const currentMembers = selectedTripMeta?.participants || ["我", "小明", "小華"];
+  const currentMembers = useMemo(
+    () => selectedTripMeta?.participants ?? ["我", "小明", "小華"],
+    [selectedTripMeta?.participants],
+  );
   const currentCurrencyCode = selectedTripMeta?.currencyConfig.code || "JPY";
   const currentCurrencySymbol = selectedTripMeta?.currencyConfig.symbol || "￥";
   const canUseExpense = Boolean(userEmail);
   const isUsingSharedExpenseBook = canUseExpense && hasEditPermission;
   const expenseMembers =
     isUsingSharedExpenseBook || !userEmail ? currentMembers : [userEmail];
+  const currentUserParticipantName = (() => {
+    if (!userEmail) return null;
+
+    const email = userEmail.trim().toLowerCase();
+    const participantEmailMap =
+      selectedTripMeta?.participantEmailMap ??
+      currentTrip?.content.participantEmailMap ??
+      {};
+    const currentMemberSet = new Set(currentMembers);
+    const matchedEntry = Object.entries(participantEmailMap).find(
+      ([participant, participantEmail]) =>
+        currentMemberSet.has(participant) &&
+        participantEmail.trim().toLowerCase() === email,
+    );
+
+    return matchedEntry?.[0] ?? null;
+  })();
   const isSignedIn = Boolean(userEmail);
   const isAssignedTrip =
     adminProfile?.role === "trip_editor" && adminProfile.trip_id === selectedTripId;
@@ -371,6 +391,7 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     canUseExpense,
     isUsingSharedExpenseBook,
     expenseMembers,
+    currentUserParticipantName,
     isSignedIn,
     isAssignedTrip,
     role,

@@ -1,6 +1,6 @@
 # Travel Companion V3-1 Handoff
 
-更新日期：2026-07-11
+更新日期：2026-07-12
 
 ---
 
@@ -9,6 +9,18 @@
 V3-1 已完成底層架構建立，並已完成其他資訊 / 參考資訊簡易本機管理工具第一階段串接。
 檢查清單模組已完成第一階段拆分、依旅程區分的本機持久化，以及私人確認清單最小雲端同步。
 Trip 管理第一階段已完成，旅程清單切換前會重新同步 Supabase，避免選到其他設備已刪除的旅程。
+
+2026-07-12 追加交接：
+
+- 版本資訊已分成「本次更新內容」與「版本歷史」，目前版本內容不重複列入歷史區。
+- 更新提示只在已安裝 App / PWA 模式顯示；一般瀏覽器網頁開啟不提示更新。
+- 未安裝 App 的手機瀏覽器會出現安裝建議，3 秒後自動收合。
+- 登入前會先顯示安全提示，說明 App 只使用 Google Email 與登入狀態。
+- 領隊 / 開車特殊資訊頁已補上 Other Info 管理入口。
+- 記帳本附件入口已明確分為「拍照」與「相簿」，多人帳本加入 realtime 與 30 秒刷新 fallback。
+- 附件同步失敗後重試會保留本機暫存，避免第一次失敗後第二次無資料可上傳。
+- 旅程編輯新增 participantEmailMap，格式為 `參與者=Email`；記帳本付款人可依登入 Email 鎖定。
+- 角色與權限仍由 `admin_users.email` 判斷，participantEmailMap 僅用於把登入帳號對應到帳本付款人。
 
 目前已完成：
 
@@ -249,6 +261,7 @@ src/constants/
 目前已執行並通過：
 
 ```bash
+npm.cmd run lint
 npm.cmd run build
 ```
 
@@ -261,15 +274,22 @@ npm.cmd run build
 建議流程：
 
 1. 近期 Bug Backlog 與管理入口一致化已完成。
-2. Other Info / Reference 建議範圍：
+2. 先做 2026-07-12 實機回歸：
+   - iOS Safari 安裝建議與加入主畫面流程。
+   - Android Chrome 安裝提示。
+   - iOS / Android 記帳本拍照與相簿入口。
+   - iOS 附件同步失敗後重試與附件連結開啟。
+   - 兩台手機同一帳本新增 / 刪除後即時或 30 秒內更新。
+   - `super_admin` / `trip_editor` participantEmailMap 付款人鎖定。
+3. Other Info / Reference 建議範圍：
    - 執行 `docs/sql/005_other_info_cloud_schema.sql`。
    - 執行 `docs/sql/006_other_info_cloud_validation.sql` 驗證。
    - 實作最小雲端同步。
    - 暫時不做完整 Pending Queue / Conflict Resolution。
-3. 暫緩項目：
+4. 暫緩項目：
    - Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列。
    - Conflict Resolution：本機與雲端同一筆資料都被修改時的合併或取捨規則。
    - 新 Travel Tool。
-4. 下一輪交付前執行：
+5. 下一輪交付前執行：
    - `npm run lint`
    - `npm run build`

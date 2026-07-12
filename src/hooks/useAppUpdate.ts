@@ -24,6 +24,19 @@ type AppVersionMetadata = {
 
 const RELEASE_NOTICE_STORAGE_KEY = "travel_companion_seen_app_version";
 
+const isRunningAsInstalledApp = () => {
+  const navigatorWithStandalone = navigator as Navigator & {
+    standalone?: boolean;
+  };
+
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    navigatorWithStandalone.standalone === true ||
+    document.referrer.startsWith("android-app://")
+  );
+};
+
 const getStoredAppVersion = () =>
   localStorage.getItem(RELEASE_NOTICE_STORAGE_KEY);
 
@@ -68,6 +81,7 @@ const fetchLatestVersionMetadata = async (): Promise<AppVersionMetadata | null> 
 };
 
 export const useAppUpdate = () => {
+  const [isInstalledApp] = useState(isRunningAsInstalledApp);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [latestMetadata, setLatestMetadata] = useState<AppVersionMetadata>({
     version: APP_VERSION,
@@ -80,6 +94,10 @@ export const useAppUpdate = () => {
     return storedVersion ?? APP_VERSION;
   });
   const [releaseNoticeVisible, setReleaseNoticeVisible] = useState(() => {
+    if (!isInstalledApp) {
+      return false;
+    }
+
     const storedVersion = getStoredAppVersion();
 
     if (!storedVersion) {
@@ -104,7 +122,7 @@ export const useAppUpdate = () => {
 
         setLatestMetadata(latestVersion);
 
-        if (!dismissedRef.current) {
+        if (isInstalledApp && !dismissedRef.current) {
           setUpdateAvailable(true);
         }
       },
@@ -115,7 +133,7 @@ export const useAppUpdate = () => {
         console.warn("PWA Service Worker registration failed.", error);
       },
     });
-  }, []);
+  }, [isInstalledApp]);
 
   const markReleaseNoticeSeen = useCallback(() => {
     localStorage.setItem(RELEASE_NOTICE_STORAGE_KEY, APP_VERSION);
@@ -138,7 +156,8 @@ export const useAppUpdate = () => {
     setUpdateAvailable(false);
   }, [markReleaseNoticeSeen]);
 
-  const isPromptVisible = updateAvailable || releaseNoticeVisible;
+  const isPromptVisible =
+    isInstalledApp && (updateAvailable || releaseNoticeVisible);
 
   return {
     updateAvailable: isPromptVisible,

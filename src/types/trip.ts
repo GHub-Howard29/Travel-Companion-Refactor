@@ -9,6 +9,7 @@ export interface TripMeta {
   mode?: TripMode;
   detailPath?: string;
   participants: string[];
+  participantEmailMap?: Record<string, string>;
   currencyConfig: {
     code: string;
     symbol: string;
@@ -21,6 +22,7 @@ export interface TripEditorInput {
   dayCount: number;
   mode: TripMode;
   participants: string[];
+  participantEmailMap: Record<string, string>;
   editorEmails: string[];
   currencyCode: string;
   currencySymbol: string;
@@ -77,6 +79,7 @@ export interface TripDetail {
     days: number[];
     custom_tab_1: CustomTabConfig;
     checklistData: ChecklistItem[];
+    participantEmailMap?: Record<string, string>;
     otherInfoItems?: OtherInfoItem[];
     daysData: {
       [dayNumber: string]: ItineraryItem[]; // 動態對應 "1", "2", "3" 等天數的行程陣列

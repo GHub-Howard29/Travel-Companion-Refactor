@@ -151,6 +151,26 @@ const normalizeEmails = (emails: string[]): string[] => {
   );
 };
 
+const normalizeParticipantEmailMap = (
+  participantEmailMap: Record<string, string> | undefined,
+  participants: string[],
+): Record<string, string> => {
+  if (!participantEmailMap) return {};
+
+  const participantSet = new Set(participants.map((item) => item.trim()).filter(Boolean));
+  const entries = Object.entries(participantEmailMap)
+    .map(([participant, email]) => [
+      participant.trim(),
+      email.trim().toLowerCase(),
+    ] as const)
+    .filter(
+      ([participant, email]) =>
+        participantSet.has(participant) && email.includes("@"),
+    );
+
+  return Object.fromEntries(entries);
+};
+
 const fetchJson = async <T>(url: string): Promise<T | null> => {
   const response = await fetch(url);
   if (!response.ok) return null;
@@ -160,11 +180,16 @@ const fetchJson = async <T>(url: string): Promise<T | null> => {
 
 const withDayCount = (trip: TripMeta, detail: TripDetail | null): TripMeta => {
   const mode = inferTripMode(trip, detail);
+  const participantEmailMap = normalizeParticipantEmailMap(
+    trip.participantEmailMap ?? detail?.content.participantEmailMap,
+    trip.participants,
+  );
 
   return {
     ...trip,
     mode,
     dayCount: detail?.content.days.length ?? trip.dayCount ?? 1,
+    participantEmailMap,
   };
 };
 
@@ -273,13 +298,19 @@ export const createTripRecord = (input: TripEditorInput): StoredTripRecord => {
   const days = createDays(input.dayCount);
   const editorEmails = normalizeEmails(input.editorEmails);
   const mode = input.mode;
+  const participants = input.participants.map((item) => item.trim()).filter(Boolean);
+  const participantEmailMap = normalizeParticipantEmailMap(
+    input.participantEmailMap,
+    participants,
+  );
   const meta: TripMeta = {
     id,
     title: input.title.trim(),
     departureDate: input.departureDate,
     dayCount: input.dayCount,
     mode,
-    participants: input.participants.map((item) => item.trim()).filter(Boolean),
+    participants,
+    participantEmailMap,
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
       symbol: input.currencySymbol.trim(),
@@ -299,6 +330,7 @@ export const createTripRecord = (input: TripEditorInput): StoredTripRecord => {
         mainText: "",
       },
       checklistData: [],
+      participantEmailMap,
       otherInfoItems: ensureSpecialInfoItems(id, mode, []),
       daysData: createEmptyDaysData(days),
     },
@@ -324,6 +356,11 @@ export const updateTripRecord = (
   const days = createDays(input.dayCount);
   const currentDaysData = currentRecord.detail.content.daysData;
   const mode = input.mode;
+  const participants = input.participants.map((item) => item.trim()).filter(Boolean);
+  const participantEmailMap = normalizeParticipantEmailMap(
+    input.participantEmailMap,
+    participants,
+  );
   const nextDaysData = days.reduce<TripDetail["content"]["daysData"]>(
     (result, day) => {
       result[String(day)] = currentDaysData[String(day)] ?? [];
@@ -337,7 +374,8 @@ export const updateTripRecord = (
     departureDate: input.departureDate,
     dayCount: input.dayCount,
     mode,
-    participants: input.participants.map((item) => item.trim()).filter(Boolean),
+    participants,
+    participantEmailMap,
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
       symbol: input.currencySymbol.trim(),
@@ -352,6 +390,7 @@ export const updateTripRecord = (
       ...currentRecord.detail.content,
       mode,
       days,
+      participantEmailMap,
       otherInfoItems: ensureSpecialInfoItems(
         currentRecord.detail.id,
         mode,
@@ -376,6 +415,11 @@ export const createTripRecordFromExisting = (
 ): StoredTripRecord => {
   const days = createDays(input.dayCount);
   const mode = input.mode;
+  const participants = input.participants.map((item) => item.trim()).filter(Boolean);
+  const participantEmailMap = normalizeParticipantEmailMap(
+    input.participantEmailMap,
+    participants,
+  );
   const nextDaysData = days.reduce<TripDetail["content"]["daysData"]>(
     (result, day) => {
       result[String(day)] = detail.content.daysData[String(day)] ?? [];
@@ -389,7 +433,8 @@ export const createTripRecordFromExisting = (
     departureDate: input.departureDate,
     dayCount: input.dayCount,
     mode,
-    participants: input.participants.map((item) => item.trim()).filter(Boolean),
+    participants,
+    participantEmailMap,
     currencyConfig: {
       code: input.currencyCode.trim().toUpperCase(),
       symbol: input.currencySymbol.trim(),
@@ -404,6 +449,7 @@ export const createTripRecordFromExisting = (
       ...detail.content,
       mode,
       days,
+      participantEmailMap,
       otherInfoItems: ensureSpecialInfoItems(
         detail.id,
         mode,
@@ -453,6 +499,11 @@ export const createTripRecordFromDetail = (
   detail: TripDetail,
   editorEmails: string[],
 ): StoredTripRecord => {
+  const participantEmailMap = normalizeParticipantEmailMap(
+    detail.content.participantEmailMap ?? meta.participantEmailMap,
+    meta.participants,
+  );
+
   return {
     meta: {
       ...meta,
@@ -460,8 +511,15 @@ export const createTripRecordFromDetail = (
       departureDate: detail.departureDate,
       dayCount: detail.content.days.length,
       mode: inferTripMode(meta, detail),
+      participantEmailMap,
     },
-    detail,
+    detail: {
+      ...detail,
+      content: {
+        ...detail.content,
+        participantEmailMap,
+      },
+    },
     editorEmails: normalizeEmails(editorEmails),
     updatedAt: new Date().toISOString(),
   };

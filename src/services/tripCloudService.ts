@@ -37,6 +37,23 @@ const isTripContent = (value: unknown): value is TripDetail["content"] => {
   );
 };
 
+const toParticipantEmailMap = (value: unknown): Record<string, string> => {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(
+        (entry): entry is [string, string] =>
+          typeof entry[0] === "string" && typeof entry[1] === "string",
+      )
+      .map(([participant, email]) => [
+        participant.trim(),
+        email.trim().toLowerCase(),
+      ])
+      .filter(([participant, email]) => participant && email.includes("@")),
+  );
+};
+
 const inferTripMode = (
   sidebarConfig: SidebarItemConfig[],
   content: TripDetail["content"],
@@ -72,6 +89,9 @@ const toTripRecord = (row: CloudTripRow): StoredTripRecord | null => {
   }
 
   const mode = inferTripMode(row.sidebar_config, row.content);
+  const participantEmailMap = toParticipantEmailMap(
+    row.content.participantEmailMap,
+  );
   const meta: TripMeta = {
     id: row.id,
     title: row.title,
@@ -79,6 +99,7 @@ const toTripRecord = (row: CloudTripRow): StoredTripRecord | null => {
     dayCount: row.content.days.length,
     mode,
     participants,
+    participantEmailMap,
     currencyConfig: row.currency_config,
   };
   const detail: TripDetail = {
@@ -90,6 +111,7 @@ const toTripRecord = (row: CloudTripRow): StoredTripRecord | null => {
     content: {
       ...row.content,
       mode,
+      participantEmailMap,
     },
   };
 
@@ -142,6 +164,10 @@ export const upsertCloudTripRecord = async (
         content: {
           ...record.detail.content,
           mode: record.meta.mode ?? "guided",
+          participantEmailMap:
+            record.meta.participantEmailMap ??
+            record.detail.content.participantEmailMap ??
+            {},
         },
       },
       { onConflict: "id" },
