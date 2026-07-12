@@ -37,6 +37,7 @@ import { useAppUpdate } from "./hooks/useAppUpdate";
 import useTripWorkspace from "./hooks/useTripWorkspace";
 import { AppContext } from "./app/context/AppContext";
 import { getTripDetail } from "./services/tripRepository";
+import { syncCloudOtherInfoItems } from "./services/otherInfoCloudService";
 
 // --- 初始化 Supabase 雲端客戶端 ---
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -354,6 +355,35 @@ export default function App() {
   };
   const handleSaveOtherInfoItems = async (items: OtherInfoItem[]) => {
     if (!currentTrip) return;
+
+    const currentItemsById = new Map(
+      (currentTrip.content.otherInfoItems ?? []).map((item) => [item.id, item]),
+    );
+    const nextItemIdSet = new Set(items.map((item) => item.id));
+    const removedItemIds = (currentTrip.content.otherInfoItems ?? [])
+      .map((item) => item.id)
+      .filter((itemId) => !nextItemIdSet.has(itemId));
+    const changedItems = items.filter((item) => {
+      const currentItem = currentItemsById.get(item.id);
+
+      return (
+        !currentItem ||
+        currentItem.folderId !== item.folderId ||
+        currentItem.title !== item.title ||
+        currentItem.content !== item.content ||
+        currentItem.order !== item.order ||
+        currentItem.updatedAt !== item.updatedAt ||
+        JSON.stringify(currentItem.allowedRoles ?? []) !==
+          JSON.stringify(item.allowedRoles ?? [])
+      );
+    });
+
+    await syncCloudOtherInfoItems(
+      supabase,
+      selectedTripId,
+      changedItems,
+      removedItemIds,
+    );
 
     await saveCurrentTripDetail({
       ...currentTrip,

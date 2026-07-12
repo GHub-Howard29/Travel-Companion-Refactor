@@ -1,15 +1,15 @@
 # Travel Companion Agent Guide
 
-## 最新交接摘要（2026-07-11）
+## 最新交接摘要（2026-07-12）
 
 本節是給另一台電腦 / 新 Codex thread 接續用的最新狀態。進入專案後請先讀本節，再依任務查閱 `docs/001 V3-1_Handoff.md`、`docs/002 V3-1_Architecture_Decisions.md`、`docs/04_資料庫設計.md`、`docs/09_待辦事項(TODO).md`。
 
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新已知 commit：`3e60c9f 切換旅程前同步資料庫`
-- 前一個功能 commit：`0293bfe 收合清單管理並同步旅程快取`
-- 目前工作樹可能有未提交變更；完成文件或程式修改並驗證通過後，Codex 應直接建立繁體中文 commit。
+- 最新已知 commit：`1fc8e62 保留未同步其他資訊內容`
+- 前一個功能 commit：`0f55eba 修正安裝版本顯示資訊`
+- 目前只允許留下 `.codex-remote-attachments/` 這類對話附件暫存未追蹤；程式與文件修改完成後應直接建立繁體中文 commit。
 - 尚未確認是否已 push 到遠端。
 - commit message 規則：使用者已要求「中文 commit」，後續 Codex 完成文件或程式修改後一律直接使用繁體中文 commit message 建立 commit，並回報實際使用的中文 commit message。
 
@@ -62,6 +62,23 @@ V3-1 目前已完成：
   - 已補充 `harden_trip_cloud_grants` migration，移除舊的寬鬆 `admin_users` read policy 並收斂 grants。
   - 已補充 `tune_trip_cloud_advisor_findings` migration，處理 Trip Cloud 的 Supabase advisor findings。
   - 已完成自動化 smoke test：本機 base path / trip JSON 皆回 200；Supabase anon key 可讀 `trips` 且不可讀 `admin_users`。
+- V3.1.0 追加修正已完成：
+  - 版本資訊分成「本次更新內容」與「版本歷史」，避免重複顯示。
+  - 更新提示只在 App / PWA 安裝模式顯示，一般瀏覽器網頁開啟不提示更新。
+  - 手機瀏覽器未安裝 App 時顯示安裝建議，3 秒後自動收合。
+  - 登入前新增安全提示，說明只使用 Google Email 與登入狀態。
+  - 領隊 / 開車特殊資訊頁補上管理入口。
+  - 記帳本附件入口改為「拍照」與「相簿」兩個明確入口。
+  - 記帳本多人同步加入 Supabase realtime、30 秒輪詢與 focus / online / visibility fallback。
+  - 附件同步失敗後重試時保留並復用本機附件暫存。
+  - 旅程新增「參與者對應登入 Email」，記帳本付款人可依登入帳號鎖定。
+- V3.1.1 已完成：
+  - Other Info / 參考資訊接上最小雲端同步基礎。
+  - `other_info_items` schema / RLS 已透過 Supabase connector 執行並驗證。
+  - Supabase advisors 針對 Other Info 新增 schema 的 `search_path` 與 foreign key index findings 已修正。
+  - PWA manifest、`package.json`、`package-lock.json` 與 App 版本設定皆已同步為 V3.1.1。
+  - Other Info 雲端資料讀取會和既有 Trip 內容合併，保留尚未同步的本機 / Trip 內容。
+  - 下一步由 Product Owner 手動將 `develop` 合併到 `main`，再執行發布流程。
 
 ### 本輪已完成修改
 
@@ -137,10 +154,11 @@ V3-1 目前已完成：
 
 最高優先：
 
+- Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.1。
+- 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.1。
 - 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程。
 - Guest 瀏覽旅程已於 2026-07-11 本機 App 驗證通過。
-- Other Info / Reference 權限過濾與「管理 / 退出」模式已完成。
-- Other Info / Reference Supabase schema / RLS 已設計，接續執行 SQL、驗證，再實作最小雲端同步。
+- Other Info / Reference 權限過濾、「管理 / 退出」模式、Supabase schema / RLS 與前端最小雲端同步已完成；下一步是實機回歸。
 
 仍待評估：
 
@@ -150,7 +168,7 @@ V3-1 目前已完成：
 - 是否要將 `admin_users` 中長期補上 `user_id uuid`。
   - 目前程式與 SQL 仍可沿用 `email + role + trip_id`，新增 `trip_editor` 只需維護 Supabase 表格，不需改程式。
   - 若未來 RLS 想更穩，可再補 `user_id`。
-- 其他資訊 / 參考資訊尚未實作 Supabase schema / RLS 與雲端同步。
+- 其他資訊 / 參考資訊已完成 Supabase schema / RLS 與最小雲端同步；尚未做多人協作衝突處理。
 - Vite chunk size warning 尚未處理。
 
 ### 重要檔案
@@ -206,10 +224,9 @@ Trip Management：
 
 1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
+   - Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.1。
    - 使用 `super_admin` / `trip_editor` 帳號完成 Trip Cloud 實機驗證。
-   - 在 Supabase SQL Editor 執行 `docs/sql/005_other_info_cloud_schema.sql`。
-   - 執行 `docs/sql/006_other_info_cloud_validation.sql` 驗證。
-   - 實作 Other Info 最小雲端同步。
+   - 使用 `super_admin` / `trip_editor` 帳號完成 Other Info 雲端同步實機回歸。
 3. 每次交付前執行：
 
    ```bash

@@ -75,6 +75,7 @@ where schemaname = 'public'
     'other_info_items_pkey',
     'other_info_items_trip_folder_order_idx',
     'other_info_items_trip_deleted_idx',
+    'other_info_items_created_by_idx',
     'other_info_items_one_client_item_per_trip'
   )
 order by indexname;

@@ -19,6 +19,7 @@ import {
   getCloudTripRecords,
   upsertCloudTripRecord,
 } from "./tripCloudService";
+import { getCloudOtherInfoItems } from "./otherInfoCloudService";
 import { sortTripsByDateDesc } from "../utils/tripHelpers";
 
 const SPECIAL_INFO_SCREEN_ID = "trip_special_info";
@@ -113,6 +114,23 @@ const ensureSpecialInfoItems = (
   }
 
   return [createSpecialInfoItem(tripId, mode), ...currentItems];
+};
+
+const mergeOtherInfoItems = (
+  baseItems: OtherInfoItem[] | undefined,
+  cloudItems: OtherInfoItem[],
+): OtherInfoItem[] => {
+  const mergedItemsById = new Map<string, OtherInfoItem>();
+
+  (baseItems ?? []).forEach((item) => {
+    mergedItemsById.set(item.id, item);
+  });
+
+  cloudItems.forEach((item) => {
+    mergedItemsById.set(item.id, item);
+  });
+
+  return Array.from(mergedItemsById.values());
 };
 
 const toSlug = (value: string): string => {
@@ -286,11 +304,49 @@ export const getTripDetail = async (
     (record) => record.meta.id === tripId,
   );
   const latestRecord = chooseLatestRecord([cloudTrip, storedTrip]);
-  if (latestRecord) return latestRecord.detail;
+  if (latestRecord) {
+    const cloudOtherInfoItems = await getCloudOtherInfoItems(supabase, tripId);
+
+    if (cloudOtherInfoItems && cloudOtherInfoItems.length > 0) {
+      return {
+        ...latestRecord.detail,
+        content: {
+          ...latestRecord.detail.content,
+          otherInfoItems: ensureSpecialInfoItems(
+            latestRecord.detail.id,
+            inferTripMode(latestRecord.meta, latestRecord.detail),
+            mergeOtherInfoItems(
+              latestRecord.detail.content.otherInfoItems,
+              cloudOtherInfoItems,
+            ),
+          ),
+        },
+      };
+    }
+
+    return latestRecord.detail;
+  }
 
   const detailPath = selectedTripMeta?.detailPath || `/trips/${tripId}.json`;
   const url = `${basePath}${detailPath.replace(/^\//, "")}`.replace(/\/+/g, "/");
-  return fetchJson<TripDetail>(url);
+  const seedDetail = await fetchJson<TripDetail>(url);
+  const cloudOtherInfoItems = await getCloudOtherInfoItems(supabase, tripId);
+
+  if (seedDetail && cloudOtherInfoItems && cloudOtherInfoItems.length > 0) {
+    return {
+      ...seedDetail,
+      content: {
+        ...seedDetail.content,
+        otherInfoItems: ensureSpecialInfoItems(
+          seedDetail.id,
+          inferTripMode(selectedTripMeta, seedDetail),
+          mergeOtherInfoItems(seedDetail.content.otherInfoItems, cloudOtherInfoItems),
+        ),
+      },
+    };
+  }
+
+  return seedDetail;
 };
 
 export const createTripRecord = (input: TripEditorInput): StoredTripRecord => {

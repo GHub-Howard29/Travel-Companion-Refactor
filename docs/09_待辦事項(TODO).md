@@ -1,6 +1,6 @@
 # 開發進度與待辦事項
 
-> Version：V3.0
+> Version：V3.1.1
 >
 > 最後更新：2026-07-12
 
@@ -123,6 +123,9 @@ Travel Tool 模組化落地。
 - [x] 記帳本多人同步加入 Supabase realtime、30 秒輪詢與 focus / online / visibility fallback。
 - [x] 記帳本附件同步失敗後重試時保留並復用本機附件暫存。
 - [x] 旅程新增「參與者對應登入 Email」，記帳本付款人可依登入帳號鎖定。
+- [x] 2026-07-12 追加修正已整理為 V3.1.0 的補充說明。
+- [x] V3.1.1 版本資訊同步到 `appVersion.ts`、`app-version.json`、`package.json`、lockfile 與 PWA manifest metadata。
+- [x] Other Info 雲端資料與既有 Trip 內容合併，避免只同步部分雲端資料時蓋掉未同步內容。
 - [ ] iOS Safari 實機確認安裝建議與加入主畫面流程。
 - [ ] iOS 實機確認拍照 / 相簿、附件同步失敗後重試、附件連結開啟。
 - [ ] 兩台手機實機確認同一帳本新增 / 刪除後即時或 30 秒內更新。
@@ -266,8 +269,21 @@ Trip 管理
 - [x] 權限過濾
 - [x] 領隊導遊聯絡資訊 / 自駕租車須知與其他資訊改為瀏覽優先，透過管理入口進入下一層編輯
 - [x] 設計 Other Info Supabase schema / RLS
-- [ ] 雲端同步
+- [x] 前端最小雲端同步基礎：讀取、upsert、軟刪除與 Trip 刪除清理
+- [x] 執行 Other Info Supabase schema / RLS SQL
+- [x] 驗證 Other Info Supabase schema / RLS SQL
+- [x] 修正 Other Info schema 新增後的 Supabase advisor findings：helper functions 固定 `search_path`，並補上 `created_by` index。
+- [ ] 實機回歸 Other Info 雲端同步
 - [ ] 多人協作
+
+---
+
+## 發布前人工收尾（V3.1.1）
+
+- [ ] Product Owner 手動將 `develop` 合併到 `main`。
+- [ ] Product Owner 手動執行版本發布 / 部署流程。
+- [ ] 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.1。
+- [ ] 部署後實機回歸 Other Info 新增、編輯、刪除與不同角色瀏覽權限。
 
 ---
 
