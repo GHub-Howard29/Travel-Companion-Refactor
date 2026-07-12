@@ -1,6 +1,6 @@
 # 開發進度與待辦事項
 
-> Version：V3.0
+> Version：V3.1.1
 >
 > 最後更新：2026-07-12
 
@@ -267,7 +267,10 @@ Trip 管理
 - [x] 權限過濾
 - [x] 領隊導遊聯絡資訊 / 自駕租車須知與其他資訊改為瀏覽優先，透過管理入口進入下一層編輯
 - [x] 設計 Other Info Supabase schema / RLS
-- [ ] 雲端同步
+- [x] 前端最小雲端同步基礎：讀取、upsert、軟刪除與 Trip 刪除清理
+- [ ] 執行 Other Info Supabase schema / RLS SQL
+- [ ] 驗證 Other Info Supabase schema / RLS SQL
+- [ ] 實機回歸 Other Info 雲端同步
 - [ ] 多人協作
 
 ---

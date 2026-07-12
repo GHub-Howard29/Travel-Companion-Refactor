@@ -193,6 +193,7 @@ export const deleteCloudTripRecord = async (
 
   const cleanupRequests = [
     supabase.from("checklists").delete().eq("trip_id", tripId),
+    supabase.from("other_info_items").delete().eq("trip_id", tripId),
     supabase
       .from("admin_users")
       .delete()
