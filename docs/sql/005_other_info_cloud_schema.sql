@@ -19,6 +19,7 @@ create or replace function public.tc_other_info_role(target_trip_id text)
 returns text
 language sql
 stable
+set search_path = ''
 as $$
   select case
     when public.tc_is_super_admin() then 'super_admin'
@@ -32,6 +33,7 @@ create or replace function public.tc_can_edit_other_info(target_trip_id text)
 returns boolean
 language sql
 stable
+set search_path = ''
 as $$
   select public.tc_is_super_admin()
     or public.tc_is_trip_editor(target_trip_id);
@@ -63,6 +65,9 @@ where deleted_at is null;
 create index if not exists other_info_items_trip_deleted_idx
 on public.other_info_items (trip_id, deleted_at);
 
+create index if not exists other_info_items_created_by_idx
+on public.other_info_items (created_by);
+
 create unique index if not exists other_info_items_one_client_item_per_trip
 on public.other_info_items (trip_id, client_item_id)
 where client_item_id is not null;
@@ -70,6 +75,7 @@ where client_item_id is not null;
 create or replace function public.tc_prevent_other_info_identity_update()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   if new.trip_id <> old.trip_id then
