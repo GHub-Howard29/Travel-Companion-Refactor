@@ -26,6 +26,16 @@ export const VERSION_HISTORY: VersionHistoryItem[] = [
     notes: RELEASE_NOTES,
   },
   {
+    version: "3.0.0",
+    date: "2026-07-11",
+    forceUpdate: true,
+    notes: [
+      "可以在 App 裡新增、編輯旅程與每日行程",
+      "新增共同檢查清單與私人確認清單，方便旅行前分工準備",
+      "新增版本更新提醒，更新前會先讓你看到本次改了什麼",
+    ],
+  },
+  {
     version: "2.0.0",
     date: "2026-07",
     forceUpdate: false,
