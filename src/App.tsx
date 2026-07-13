@@ -38,6 +38,13 @@ import useTripWorkspace from "./hooks/useTripWorkspace";
 import { AppContext } from "./app/context/AppContext";
 import { getTripDetail } from "./services/tripRepository";
 import { syncCloudOtherInfoItems } from "./services/otherInfoCloudService";
+import {
+  getSpecialInfoFolderId,
+  getTravelToolHeaderBgClassName,
+  isAuthRequiredTravelTool,
+  isSpecialInfoSidebarItem,
+  resolveTravelToolType,
+} from "./utils/travelToolRegistry";
 
 // --- 初始化 Supabase 雲端客戶端 ---
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -61,14 +68,6 @@ const createEmptyItineraryDraft = (): ItineraryItem => ({
   desc: "",
   location: "",
 });
-
-const LEGACY_SPECIAL_INFO_SCREEN_IDS = new Set([
-  "trip_special_info",
-  "leader_info",
-  "custom_info",
-]);
-const GUIDED_SPECIAL_INFO_FOLDER_ID = "special-info-guided";
-const SELF_GUIDED_SPECIAL_INFO_FOLDER_ID = "special-info-self-guided";
 
 const isIosStandalonePwa = () => {
   const navigatorWithStandalone = navigator as Navigator & {
@@ -300,7 +299,7 @@ export default function App() {
   }, [currentUserParticipantName, setNewPayer]);
 
   const handleScreenSelect = (item: SidebarItemConfig) => {
-    if ((item.type === "expense" || item.type === "privateChecklist") && !userEmail) {
+    if (isAuthRequiredTravelTool(item.type) && !userEmail) {
       alert("此功能須先登入");
       setIsMenuOpen(false);
       return;
@@ -337,28 +336,11 @@ export default function App() {
     ],
   );
 
-  const isSpecialInfoSidebarItem = (
-    item: SidebarItemConfig | undefined,
-  ): boolean => {
-    if (!item) return false;
-
-    return (
-      LEGACY_SPECIAL_INFO_SCREEN_IDS.has(item.id) ||
-      (item.type === "text" &&
-        (item.title.includes("領隊") ||
-          item.title.includes("導遊") ||
-          item.title.includes("自駕") ||
-          item.title.includes("租車")))
+  const getCurrentScreenType = () =>
+    resolveTravelToolType(
+      currentScreen,
+      currentTrip?.sidebarConfig.find((s) => s.id === currentScreen),
     );
-  };
-
-  const getCurrentScreenType = () => {
-    if (currentScreen === "privateChecklist") return "privateChecklist";
-
-    const item = currentTrip?.sidebarConfig.find((s) => s.id === currentScreen);
-
-    return isSpecialInfoSidebarItem(item) ? "otherInfo" : item?.type;
-  };
   const openCreateTrip = () => {
     setTripEditorMode("create");
     setIsTripEditorOpen(true);
@@ -535,14 +517,10 @@ export default function App() {
     (item) => item.id === currentScreen,
   );
   const isSpecialInfoPage = isSpecialInfoSidebarItem(currentSidebarItem);
-  const isSelfGuidedSpecialInfo =
-    currentTrip?.content.mode === "selfGuided" ||
-    currentSidebarItem?.title.includes("自駕") === true ||
-    currentSidebarItem?.title.includes("租車") === true;
-  const specialInfoFolderId =
-    isSelfGuidedSpecialInfo
-      ? SELF_GUIDED_SPECIAL_INFO_FOLDER_ID
-      : GUIDED_SPECIAL_INFO_FOLDER_ID;
+  const specialInfoFolderId = getSpecialInfoFolderId(
+    currentSidebarItem,
+    currentTrip?.content.mode,
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -574,31 +552,12 @@ export default function App() {
   }, [tripOptions]);
 
   useEffect(() => {
-    if (
-      userEmail ||
-      (currentScreenType !== "expense" && currentScreenType !== "privateChecklist")
-    ) {
+    if (userEmail || !isAuthRequiredTravelTool(currentScreenType)) {
       return;
     }
 
     setCurrentScreen("itinerary");
   }, [currentScreenType, setCurrentScreen, userEmail]);
-
-  const getHeaderBgColor = () => {
-    switch (currentScreenType) {
-      case "checklist":
-      case "privateChecklist":
-        return "bg-rose-700";
-      case "expense":
-        return "bg-amber-600";
-      case "text":
-        return "bg-stone-700";
-      case "otherInfo":
-        return "bg-stone-700";
-      default:
-        return "bg-emerald-700";
-    }
-  };
 
   return (
     <AppContext.Provider value={appContextValue}>
@@ -695,7 +654,7 @@ export default function App() {
         isUsingSharedExpenseBook={isUsingSharedExpenseBook}
         userEmail={userEmail}
         onOpenMenu={() => setIsMenuOpen(true)}
-        headerBgClassName={getHeaderBgColor()}
+        headerBgClassName={getTravelToolHeaderBgClassName(currentScreenType)}
       />
 
       {/* 主內容呈現區 */}
