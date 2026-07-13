@@ -30,6 +30,7 @@ interface ExpenseScreenProps {
   lockedPayerName: string | null;
   totalExpense: number;
   averageExpense: number;
+  memberShareAmounts: Record<string, number>;
   paitAmounts: Record<string, number>;
   activeCurrencySymbol: string;
   attachmentSyncLabel: string;
@@ -85,6 +86,7 @@ export default function ExpenseScreen({
   lockedPayerName,
   totalExpense,
   averageExpense,
+  memberShareAmounts,
   paitAmounts,
   activeCurrencySymbol,
   attachmentSyncLabel,
@@ -179,7 +181,7 @@ export default function ExpenseScreen({
             <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/20 text-sm">
               <div className="min-w-0">
                 <span className="text-amber-100/80 text-xs block">
-                  {expenseMembers.length} 人平攤 (每人)
+                  {expenseMembers.length} 人平攤 (平均參考)
                 </span>
                 <span className="block min-w-0 break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
                   {activeCurrencySymbol} {averageExpense.toLocaleString()}
@@ -204,7 +206,8 @@ export default function ExpenseScreen({
           <div className="space-y-3">
             {expenseMembers.map((member: string) => {
               const paid = paitAmounts[member] || 0;
-              const status = paid - averageExpense;
+              const share = memberShareAmounts[member] || 0;
+              const status = paid - share;
               return (
                 <div
                   key={member}
@@ -217,6 +220,9 @@ export default function ExpenseScreen({
                     <span className="block min-w-0 break-words text-xs text-slate-400 [overflow-wrap:anywhere]">
                       已墊：{activeCurrencySymbol}
                       {paid.toLocaleString()}
+                      <br />
+                      應分攤：{activeCurrencySymbol}
+                      {share.toLocaleString()}
                     </span>
                   </div>
                   <div className="min-w-0 text-right">

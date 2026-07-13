@@ -40,6 +40,10 @@ const isRunningAsInstalledApp = () => {
 const getStoredAppVersion = () =>
   localStorage.getItem(RELEASE_NOTICE_STORAGE_KEY);
 
+const setStoredAppVersion = (version: string) => {
+  localStorage.setItem(RELEASE_NOTICE_STORAGE_KEY, version);
+};
+
 const getBasePath = () => {
   const path = window.location.pathname;
   return path.includes("/Travel-Companion") ? "/Travel-Companion/" : "/";
@@ -80,6 +84,13 @@ const fetchLatestVersionMetadata = async (): Promise<AppVersionMetadata | null> 
   }
 };
 
+const clearAppCacheStorage = async () => {
+  if (!("caches" in window)) return;
+
+  const cacheNames = await caches.keys();
+  await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+};
+
 export const useAppUpdate = () => {
   const [isInstalledApp] = useState(isRunningAsInstalledApp);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -101,7 +112,7 @@ export const useAppUpdate = () => {
     const storedVersion = getStoredAppVersion();
 
     if (!storedVersion) {
-      localStorage.setItem(RELEASE_NOTICE_STORAGE_KEY, APP_VERSION);
+      setStoredAppVersion(APP_VERSION);
       return false;
     }
 
@@ -135,33 +146,37 @@ export const useAppUpdate = () => {
     });
   }, [isInstalledApp]);
 
-  const markReleaseNoticeSeen = useCallback(() => {
-    localStorage.setItem(RELEASE_NOTICE_STORAGE_KEY, APP_VERSION);
-    setCurrentVersion(APP_VERSION);
+  const update = useCallback(async () => {
+    setStoredAppVersion(latestMetadata.version);
+    setCurrentVersion(latestMetadata.version);
     setReleaseNoticeVisible(false);
-  }, []);
+    setUpdateAvailable(false);
 
-  const update = useCallback(() => {
+    try {
+      await clearAppCacheStorage();
+    } catch (error) {
+      console.warn("Failed to clear app cache storage before update.", error);
+    }
+
     if (updateAvailable) {
-      void updateServiceWorkerRef.current?.(true);
+      await updateServiceWorkerRef.current?.(true);
       return;
     }
 
-    markReleaseNoticeSeen();
-  }, [markReleaseNoticeSeen, updateAvailable]);
+    window.location.reload();
+  }, [latestMetadata.version, updateAvailable]);
 
   const dismiss = useCallback(() => {
     dismissedRef.current = true;
-    markReleaseNoticeSeen();
     setUpdateAvailable(false);
-  }, [markReleaseNoticeSeen]);
+    setReleaseNoticeVisible(false);
+  }, []);
 
   const isPromptVisible =
     isInstalledApp && (updateAvailable || releaseNoticeVisible);
 
   return {
     updateAvailable: isPromptVisible,
-    hasServiceWorkerUpdate: updateAvailable,
     currentVersion,
     latestVersion: latestMetadata.version,
     releaseDate: latestMetadata.releaseDate,

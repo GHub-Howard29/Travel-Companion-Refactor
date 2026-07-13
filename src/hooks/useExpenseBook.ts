@@ -1398,11 +1398,6 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
 
-  const averageExpense =
-    expenseMembers.length > 0
-      ? Math.round(totalExpense / expenseMembers.length)
-      : 0;
-
   const paitAmounts: { [key: string]: number } = {};
   expenseMembers.forEach((m: string) => {
     paitAmounts[m] = 0;
@@ -1414,6 +1409,68 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
       paitAmounts[item.payer] += isNaN(val) ? 0 : val;
     }
   });
+
+  const isIntegerSettlementCurrency =
+    effectiveActiveCurrency === "TWD" ||
+    effectiveActiveCurrency === "JPY" ||
+    effectiveActiveCurrency === "KRW";
+  const currencyPrecision =
+    isIntegerSettlementCurrency ? 0 : 2;
+  const currencyUnit = 10 ** currencyPrecision;
+  const totalMinorUnit = Math.round(totalExpense * currencyUnit);
+  const sharePriorityMembers = [...expenseMembers].sort(
+    (leftMember, rightMember) =>
+      (paitAmounts[rightMember] || 0) - (paitAmounts[leftMember] || 0),
+  );
+  const memberShareAmounts: { [key: string]: number } = {};
+  let averageExpense = 0;
+
+  if (expenseMembers.length > 0) {
+    if (isIntegerSettlementCurrency) {
+      const roundedShareMinorUnit = Math.ceil(
+        totalMinorUnit / expenseMembers.length,
+      );
+      let surplusMinorUnit =
+        roundedShareMinorUnit * expenseMembers.length - totalMinorUnit;
+      const memberShareMinorUnits = Object.fromEntries(
+        expenseMembers.map((member) => [member, roundedShareMinorUnit]),
+      );
+
+      for (const member of sharePriorityMembers) {
+        if (surplusMinorUnit <= 0) break;
+        const reducibleMinorUnit = Math.min(
+          surplusMinorUnit,
+          memberShareMinorUnits[member],
+        );
+        memberShareMinorUnits[member] -= reducibleMinorUnit;
+        surplusMinorUnit -= reducibleMinorUnit;
+      }
+
+      expenseMembers.forEach((member) => {
+        memberShareAmounts[member] = memberShareMinorUnits[member] / currencyUnit;
+      });
+      averageExpense = roundedShareMinorUnit / currencyUnit;
+    } else {
+      const baseShareMinorUnit = Math.floor(
+        totalMinorUnit / expenseMembers.length,
+      );
+      let remainingMinorUnit = totalMinorUnit % expenseMembers.length;
+      const extraShareMembers = new Set<string>();
+
+      for (const member of sharePriorityMembers) {
+        if (remainingMinorUnit <= 0) break;
+        extraShareMembers.add(member);
+        remainingMinorUnit -= 1;
+      }
+
+      expenseMembers.forEach((member) => {
+        const memberShareMinorUnit =
+          baseShareMinorUnit + (extraShareMembers.has(member) ? 1 : 0);
+        memberShareAmounts[member] = memberShareMinorUnit / currencyUnit;
+      });
+      averageExpense = Math.round((totalExpense / expenseMembers.length) * 100) / 100;
+    }
+  }
 
   const activeCurrencySymbol =
     SUPPORTED_CURRENCIES.find((c) => c.code === effectiveActiveCurrency)
@@ -1503,6 +1560,7 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
     attachmentSyncLabel,
     totalExpense,
     averageExpense,
+    memberShareAmounts,
     paitAmounts,
     activeCurrencySymbol,
     handleAttachmentSelection,

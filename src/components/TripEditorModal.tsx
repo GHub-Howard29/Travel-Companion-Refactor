@@ -9,6 +9,7 @@ interface TripEditorModalProps {
   editorEmails: string[];
   superAdminEmails: string[];
   canManageEditors: boolean;
+  userEmail: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (input: TripEditorInput) => Promise<void>;
@@ -16,8 +17,9 @@ interface TripEditorModalProps {
 }
 
 const CURRENCY_OPTIONS = [
-  { code: "JPY", symbol: "￥", label: "JPY ￥" },
-  { code: "TWD", symbol: "$", label: "TWD $" },
+  { code: "TWD", symbol: "NT$", label: "TWD NT$" },
+  { code: "JPY", symbol: "¥", label: "JPY ¥" },
+  { code: "KRW", symbol: "₩", label: "KRW ₩" },
   { code: "USD", symbol: "$", label: "USD $" },
   { code: "EUR", symbol: "€", label: "EUR €" },
 ];
@@ -31,32 +33,45 @@ const splitLines = (value: string): string[] => {
 
 const toTextareaValue = (items: string[]): string => items.join("\n");
 
-const toParticipantEmailText = (
-  participantEmailMap?: Record<string, string>,
-): string => {
-  if (!participantEmailMap) return "";
+const getDefaultParticipantName = (email: string): string => {
+  const [name] = email.split("@");
+  return name?.trim() || "我";
+};
 
-  return Object.entries(participantEmailMap)
-    .map(([participant, email]) => `${participant}=${email}`)
+const toParticipantAssignmentText = (
+  participants: string[],
+  participantEmailMap?: Record<string, string>,
+  fallbackEmail?: string | null,
+): string => {
+  if (participants.length === 0 && fallbackEmail) {
+    const normalizedEmail = fallbackEmail.trim().toLowerCase();
+    return `${getDefaultParticipantName(normalizedEmail)}=${normalizedEmail}`;
+  }
+
+  return participants
+    .map((participant) => {
+      const email = participantEmailMap?.[participant] ?? "";
+      return email ? `${participant}=${email}` : `${participant}=`;
+    })
     .join("\n");
 };
 
-const parseParticipantEmailMap = (value: string): Record<string, string> => {
-  return Object.fromEntries(
-    value
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [participant, ...emailParts] = line.split("=");
+const parseParticipantAssignments = (
+  value: string,
+): Array<{ participant: string; email: string; raw: string }> => {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [participant, ...emailParts] = line.split("=");
 
-        return [
-          participant.trim(),
-          emailParts.join("=").trim().toLowerCase(),
-        ] as const;
-      })
-      .filter(([participant, email]) => participant && email),
-  );
+      return {
+        participant: participant.trim(),
+        email: emailParts.join("=").trim().toLowerCase(),
+        raw: line,
+      };
+    });
 };
 
 const getInitialTripMode = (
@@ -90,6 +105,7 @@ export const TripEditorModal = ({
   editorEmails,
   superAdminEmails,
   canManageEditors,
+  userEmail,
   isOpen,
   onClose,
   onSubmit,
@@ -103,22 +119,25 @@ export const TripEditorModal = ({
   const [tripMode, setTripMode] = useState<TripMode>(() =>
     getInitialTripMode(trip, tripDetail),
   );
-  const [participants, setParticipants] = useState(
-    toTextareaValue(trip?.participants ?? []),
-  );
-  const [participantEmailText, setParticipantEmailText] = useState(
-    toParticipantEmailText(
+  const [participantAssignments, setParticipantAssignments] = useState(
+    toParticipantAssignmentText(
+      trip?.participants ?? [],
       trip?.participantEmailMap ?? tripDetail?.content.participantEmailMap,
+      userEmail,
     ),
   );
   const [editorEmailText, setEditorEmailText] = useState(
-    toTextareaValue(editorEmails),
+    toTextareaValue(
+      mode === "create" && userEmail
+        ? Array.from(new Set([userEmail.trim().toLowerCase(), ...editorEmails]))
+        : editorEmails,
+    ),
   );
   const [currencyCode, setCurrencyCode] = useState(
-    trip?.currencyConfig.code ?? "JPY",
+    trip?.currencyConfig.code ?? "TWD",
   );
   const [currencySymbol, setCurrencySymbol] = useState(
-    trip?.currencyConfig.symbol ?? "￥",
+    trip?.currencyConfig.symbol ?? "NT$",
   );
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -136,7 +155,8 @@ export const TripEditorModal = ({
     event.preventDefault();
     if (!title.trim() || !departureDate || dayCount < 1) return;
 
-    const nextParticipants = splitLines(participants);
+    const participantRows = parseParticipantAssignments(participantAssignments);
+    const nextParticipants = participantRows.map((row) => row.participant);
     if (nextParticipants.length === 0) {
       const message = "請至少輸入一位參與者後再儲存。";
       setFormError(message);
@@ -144,28 +164,40 @@ export const TripEditorModal = ({
       return;
     }
 
-    const participantEmailMap = parseParticipantEmailMap(participantEmailText);
-    const participantSet = new Set(nextParticipants);
-    const invalidParticipantNames = Object.keys(participantEmailMap).filter(
-      (participant) => !participantSet.has(participant),
+    const invalidParticipantRows = participantRows.filter(
+      (row) => !row.participant || !row.email,
     );
-    const invalidParticipantEmails = Object.entries(participantEmailMap)
-      .filter(([, email]) => !email.includes("@"))
-      .map(([participant]) => participant);
+    const invalidParticipantEmails = participantRows.filter(
+      (row) => row.email && !row.email.includes("@"),
+    );
+    const duplicatedParticipants = nextParticipants.filter(
+      (participant, index) => nextParticipants.indexOf(participant) !== index,
+    );
 
-    if (invalidParticipantNames.length > 0) {
-      const message = `參與者 Email 對應表中找不到這些參與者：${invalidParticipantNames.join("、")}。請先確認名稱和參與者欄位完全一致。`;
+    if (invalidParticipantRows.length > 0) {
+      const message = `請用「名稱=Email」格式填寫參與者，例如 Howard=howard@example.com。格式不完整：${invalidParticipantRows.map((row) => row.raw).join("、")}。`;
       setFormError(message);
       alert(message);
       return;
     }
 
     if (invalidParticipantEmails.length > 0) {
-      const message = `以下參與者的 Email 格式不正確：${invalidParticipantEmails.join("、")}。`;
+      const message = `以下參與者的 Email 格式不正確：${invalidParticipantEmails.map((row) => row.participant).join("、")}。`;
       setFormError(message);
       alert(message);
       return;
     }
+
+    if (duplicatedParticipants.length > 0) {
+      const message = `參與者名稱不可重複：${Array.from(new Set(duplicatedParticipants)).join("、")}。`;
+      setFormError(message);
+      alert(message);
+      return;
+    }
+
+    const participantEmailMap = Object.fromEntries(
+      participantRows.map((row) => [row.participant, row.email]),
+    );
 
     const nextEditorEmails = splitLines(editorEmailText).map((email) =>
       email.toLowerCase(),
@@ -291,40 +323,28 @@ export const TripEditorModal = ({
         </label>
 
         <label className="block">
-          <span className="flex items-center justify-between gap-2 text-xs font-bold text-slate-500">
-            <span>參與者</span>
-            <span className="font-medium text-slate-400">
-              此欄位會決定出現在記帳本上的名稱
-            </span>
+          <span className="text-xs font-bold text-slate-500">
+            參與者與登入 Email
           </span>
+          <p className="mt-1 text-xs leading-relaxed text-slate-400">
+            每行填寫「名稱=Email」。左邊名稱會顯示在記帳本付款人，右邊 Email
+            用於鎖定登入者可使用的付款人；新增旅程時會先帶入目前登入 Email。
+          </p>
           <textarea
-            value={participants}
-            onChange={(event) => setParticipants(event.target.value)}
+            value={participantAssignments}
+            onChange={(event) => setParticipantAssignments(event.target.value)}
             rows={3}
-            placeholder="Howard&#10;Carol"
+            placeholder="Howard=howard@example.com&#10;Carol=carol@example.com"
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             required
           />
         </label>
 
         <label className="block">
-          <span className="flex items-center justify-between gap-2 text-xs font-bold text-slate-500">
-            <span>參與者對應登入 Email</span>
-            <span className="font-medium text-slate-400">
-              用於鎖定共用帳本付款人
-            </span>
-          </span>
-          <textarea
-            value={participantEmailText}
-            onChange={(event) => setParticipantEmailText(event.target.value)}
-            rows={3}
-            placeholder="Howard=howard@example.com&#10;Carol=carol@example.com"
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </label>
-
-        <label className="block">
           <span className="text-xs font-bold text-slate-500">可編輯者 Email</span>
+          <p className="mt-1 text-xs leading-relaxed text-slate-400">
+            填入這裡的 Email，會賦予編輯旅程相關資訊以及共用帳本紀錄的權利。
+          </p>
           <textarea
             value={editorEmailText}
             onChange={(event) => setEditorEmailText(event.target.value)}
