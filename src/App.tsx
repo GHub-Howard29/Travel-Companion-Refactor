@@ -84,7 +84,6 @@ const isIosStandalonePwa = () => {
 export default function App() {
   const {
     updateAvailable,
-    hasServiceWorkerUpdate,
     currentVersion,
     latestVersion,
     releaseDate,
@@ -176,6 +175,7 @@ export default function App() {
     attachmentSyncLabel,
     totalExpense,
     averageExpense,
+    memberShareAmounts,
     paitAmounts,
     activeCurrencySymbol,
     handleAttachmentSelection,
@@ -604,7 +604,6 @@ export default function App() {
     <AppContext.Provider value={appContextValue}>
     <UpdatePrompt
       isOpen={updateAvailable}
-      hasServiceWorkerUpdate={hasServiceWorkerUpdate}
       currentVersion={currentVersion}
       latestVersion={latestVersion}
       releaseDate={releaseDate}
@@ -683,6 +682,7 @@ export default function App() {
           editorEmails={tripEditorMode === "edit" ? currentTripEditorEmails : []}
           superAdminEmails={superAdminEmails}
           canManageEditors={adminProfile?.role === "super_admin"}
+          userEmail={userEmail}
           isOpen={isTripEditorOpen}
           onClose={() => setIsTripEditorOpen(false)}
           onSubmit={handleTripEditorSubmit}
@@ -969,6 +969,7 @@ export default function App() {
                 lockedPayerName={currentUserParticipantName}
                 totalExpense={totalExpense}
                 averageExpense={averageExpense}
+                memberShareAmounts={memberShareAmounts}
                 paitAmounts={paitAmounts}
                 activeCurrencySymbol={activeCurrencySymbol}
                 attachmentSyncLabel={attachmentSyncLabel}

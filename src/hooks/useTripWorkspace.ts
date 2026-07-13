@@ -44,8 +44,8 @@ export default function useTripWorkspace({ supabase }: UseTripWorkspaceOptions) 
     () => selectedTripMeta?.participants ?? ["我", "小明", "小華"],
     [selectedTripMeta?.participants],
   );
-  const currentCurrencyCode = selectedTripMeta?.currencyConfig.code || "JPY";
-  const currentCurrencySymbol = selectedTripMeta?.currencyConfig.symbol || "￥";
+  const currentCurrencyCode = selectedTripMeta?.currencyConfig.code || "TWD";
+  const currentCurrencySymbol = selectedTripMeta?.currencyConfig.symbol || "NT$";
   const canUseExpense = Boolean(userEmail);
   const isUsingSharedExpenseBook = canUseExpense && hasEditPermission;
   const expenseMembers =

@@ -8,7 +8,6 @@ import { RefreshCw, X } from "lucide-react";
 
 type UpdatePromptProps = {
   isOpen: boolean;
-  hasServiceWorkerUpdate: boolean;
   currentVersion: string;
   latestVersion: string;
   releaseDate: string;
@@ -20,7 +19,6 @@ type UpdatePromptProps = {
 
 export function UpdatePrompt({
   isOpen,
-  hasServiceWorkerUpdate,
   currentVersion,
   latestVersion,
   releaseDate,
@@ -31,11 +29,11 @@ export function UpdatePrompt({
 }: UpdatePromptProps) {
   if (!isOpen) return null;
 
-  const updateMessage = hasServiceWorkerUpdate
+  const updateMessage = forceUpdate
     ? "本次更新必須安裝才能繼續使用"
-    : "本次為重大更新，請先查看更新內容";
-  const primaryActionLabel = hasServiceWorkerUpdate ? "立即更新" : "我知道了，開始使用";
-  const secondaryActionLabel = hasServiceWorkerUpdate ? "稍後更新" : "稍後查看";
+    : "可以馬上更新，也可以稍後再更新";
+  const primaryActionLabel = forceUpdate ? "立即更新" : "馬上更新";
+  const secondaryActionLabel = "稍後更新";
 
   return (
     <div className="fixed inset-0 z-[80] flex h-[100dvh] items-end justify-center bg-black/30 px-4 py-4 sm:items-center sm:px-6">
@@ -48,7 +46,7 @@ export function UpdatePrompt({
             <div>
               <h2 className="text-base font-bold text-slate-900">發現新版本</h2>
               <p className="text-xs text-slate-500">
-                {forceUpdate ? updateMessage : "請先查看本次更新內容"}
+                {updateMessage}
               </p>
             </div>
           </div>
@@ -88,7 +86,7 @@ export function UpdatePrompt({
           </div>
 
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
-            已儲存的旅程、清單、記帳與附件資料不會因更新被清除。若目前正在編輯表單且尚未儲存，立即更新會重新載入 App，未儲存內容會遺失，更新後需重新建立。
+            更新會清除 App 暫存並重新載入頁面。已儲存的旅程、清單、記帳與附件資料不會被清除；如果現在有尚未儲存的資料，請先儲存後再更新，避免重新載入後遺失。
           </div>
         </div>
 

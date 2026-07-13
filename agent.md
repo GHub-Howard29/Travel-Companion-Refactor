@@ -1,13 +1,13 @@
 # Travel Companion Agent Guide
 
-## 最新交接摘要（2026-07-12）
+## 最新交接摘要（2026-07-13）
 
 本節是給另一台電腦 / 新 Codex thread 接續用的最新狀態。進入專案後請先讀本節，再依任務查閱 `docs/001 V3-1_Handoff.md`、`docs/002 V3-1_Architecture_Decisions.md`、`docs/04_資料庫設計.md`、`docs/09_待辦事項(TODO).md`。
 
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新收尾版本：V3.1.3（iOS PWA 登入與照片同步修正）
+- 最新收尾版本：V3.1.4（更新提示、旅程表單、幣別與帳本分攤修正）
 - 前一個功能 commit：`1fc8e62 保留未同步其他資訊內容`
 - 目前只允許留下 `.codex-remote-attachments/` 這類對話附件暫存未追蹤；程式與文件修改完成後應直接建立繁體中文 commit。
 - 尚未確認是否已 push 到遠端。
@@ -95,6 +95,13 @@ V3-1 目前已完成：
   - iOS 照片同步上傳改為 Blob 重新包裝，失敗時改用 ArrayBuffer 重試。
   - 照片同步失敗提示會顯示實際錯誤原因，方便後續實機排查。
   - `src/config/appVersion.ts`、`public/app-version.json`、`src/config/versionHistory.ts`、`package.json`、`package-lock.json` 與文件已同步到 V3.1.3。
+- V3.1.4 已完成：
+  - 非強制更新恢復顯示更新提示，提供「馬上更新 / 稍後更新」；稍後更新不標記已讀，重新整理或重新開啟 App 會再次提醒。
+  - 馬上更新會清除 App Cache Storage 後 reload / 觸發 Service Worker 更新，不清除 `localStorage` 或 IndexedDB 內已儲存旅程資料。
+  - 新增 / 編輯旅程將參與者名稱與登入 Email 整併為 `名稱=Email` 欄位，並補上可編輯者 Email 權限說明。
+  - 幣別清單調整為 TWD、JPY、KRW、USD、EUR，並同步到記帳本新增 / 編輯帳目與幣別頁籤。
+  - 共同帳本分攤狀態新增實際應分攤金額；TWD / JPY / KRW 採整數進位，零頭盈餘由代墊者承接。
+  - `src/config/appVersion.ts`、`public/app-version.json`、`src/config/versionHistory.ts`、`package.json`、`package-lock.json` 與文件已同步到 V3.1.4。
   - 下一步由 Product Owner 手動將 `develop` 合併到 `main`，再執行發布流程。
 
 ### 本輪已完成修改
@@ -171,8 +178,9 @@ V3-1 目前已完成：
 
 最高優先：
 
-- Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.3。
-- 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.3。
+- Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.4。
+- 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.4。
+- 實機回歸 V3.1.4 更新提示、旅程 `名稱=Email` 欄位、幣別清單與 TWD / JPY / KRW 整數分攤。
 - 實機回歸 iOS PWA Google 登入、照片附件上傳 / 開啟、輸入框縮放。
 - 實機回歸領隊導遊聯絡資訊 / 自駕租車資訊與一般「其他資訊」分類互不污染。
 - 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程。
@@ -243,7 +251,7 @@ Trip Management：
 
 1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
-   - Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.3。
+   - Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.4。
    - 使用 `super_admin` / `trip_editor` 帳號完成 Trip Cloud 實機驗證。
    - 使用 `super_admin` / `trip_editor` 帳號完成 Other Info 雲端同步實機回歸。
 3. 每次交付前執行：

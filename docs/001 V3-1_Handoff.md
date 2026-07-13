@@ -1,6 +1,6 @@
 # Travel Companion V3-1 Handoff
 
-更新日期：2026-07-12
+更新日期：2026-07-13
 
 ---
 
@@ -26,6 +26,15 @@ Trip 管理第一階段已完成，旅程清單切換前會重新同步 Supabase
 - V3.1.3 已針對 iOS PWA Google 兩步驗證與 iOS 照片同步失敗追加加固：OAuth 改用專用開啟流程，照片上傳改為 Blob 重新包裝與 ArrayBuffer 重試。
 - 領隊導遊聯絡資訊 / 自駕租車資訊已改用 `special-info-guided` / `special-info-self-guided` 專用資料夾，不再混入一般「其他資訊」分類。
 - App 頁首會顯示旅程性質：「跟團」或「自助 / 自駕」。
+
+2026-07-13 追加交接：
+
+- V3.1.4 已完成非強制更新提示恢復，提供「馬上更新 / 稍後更新」；稍後更新不標記已讀，重新整理或重新開啟 App 會再次提醒。
+- 馬上更新會先清除 App Cache Storage，再 reload / 觸發 Service Worker 更新；不清除 `localStorage` 與 IndexedDB，避免移除已儲存旅程、清單、記帳與附件資料。
+- 新增 / 編輯旅程已將參與者名稱與登入 Email 整併為 `名稱=Email` 欄位，送出時仍拆回既有 `participants` 與 `participantEmailMap`。
+- 新增旅程會用目前登入 Email 預填參與者與可編輯者 Email；可編輯者 Email 補上會取得旅程資訊與共用帳本編輯權限的說明。
+- 常用幣別調整為 TWD、JPY、KRW、USD、EUR，並同步新增 / 編輯帳目、幣別頁籤與匯出資料。
+- 共同帳本分攤狀態新增每位成員的實際應分攤金額；TWD / JPY / KRW 採整數進位，零頭盈餘由代墊者承接，USD / EUR 維持分為最小單位。
 
 目前已完成：
 
@@ -297,3 +306,7 @@ npm.cmd run build
 5. 下一輪交付前執行：
    - `npm run lint`
    - `npm run build`
+6. V3.1.4 發布前回歸：
+   - 非強制更新提示、馬上更新清暫存、稍後更新再次提醒。
+   - 新增 / 編輯旅程 `名稱=Email` 欄位、可編輯者 Email 權限說明與付款人鎖定。
+   - TWD / JPY / KRW 整數分攤，KRW / EUR 幣別頁籤與匯出。

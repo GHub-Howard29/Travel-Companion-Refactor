@@ -8,9 +8,11 @@
 
 // 支援手動切換的常用幣別選單配置
 export const SUPPORTED_CURRENCIES = [
-  { code: 'JPY', symbol: '￥', name: '日圓' },
-  { code: 'TWD', symbol: '$', name: '新台幣' },
+  { code: 'TWD', symbol: 'NT$', name: '新台幣' },
+  { code: 'JPY', symbol: '¥', name: '日圓' },
+  { code: 'KRW', symbol: '₩', name: '韓元' },
   { code: 'USD', symbol: '$', name: '美金' },
+  { code: 'EUR', symbol: '€', name: '歐元' },
 ];
 
 // Supabase Storage Bucket 名稱
