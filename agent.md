@@ -377,19 +377,19 @@ npm run lint
 - `docs/09_待辦事項(TODO).md`：待辦與後續工作。
 - `docs/11_名詞定義.md`：專案名詞。
 
-注意：部分文件目前可能有編碼顯示問題。若內容在終端顯示亂碼，請交叉參考檔名、程式碼、README 與其他文件，不要直接覆蓋原文件。
+注意：`docs/*.md` 已重存為 UTF-8 with BOM，並新增 `.editorconfig` / `.gitattributes` 固定 Markdown 編碼與 LF 換行；後續若新增 Markdown，請維持相同設定。
 
 ## 目前專案狀態摘要
 
-目前主線接近 V3 / V3-1 重構階段：
+目前主線已完成 V3.2.0 帳本記帳日期第一階段，發布前仍需 Product Owner 手動合併 `develop` 到 `main`、部署並完成實機回歸：
 
 - 已有基本旅程載入、行程、清單、共同支出、附件同步、Excel 匯出等功能。
 - `Expense` 模組已拆出 components / hooks / utils / storage / types。
-- V3-1 正在處理 `Other Info` / Reference 類功能的本機資料管理與架構基礎。
+- V3-1 的 `Other Info` / Reference 本機管理與最小雲端同步已完成第一階段。
 - Checklist Module 已完成第一階段拆分，勾選狀態使用 Trip-scoped localStorage persistence。
 - V3-1 已定義 `Folder` 應為通用 Tree 結構，不再用 `FolderType` 或 `category` 硬編碼分類。
 - `OtherInfoService` 是 UI 取得 Folder / Item 的入口，UI 不應直接依賴 constants 或 storage 細節。
-- `OtherInfoPage` 目前已有簡易管理 UI，可新增、編輯、刪除資料；目前只寫入 localStorage，不同步雲端。
+- `OtherInfoPage` 目前已有管理 UI，可新增、編輯、刪除資料，並透過 Supabase 進行最小雲端同步；本機資料仍作為備援。
 
 ## 目前目錄結構重點
 
