@@ -76,6 +76,31 @@ const getErrorMessage = (error: unknown) => {
   return String(error || "unknown-error");
 };
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const localTime = now.getTime() - now.getTimezoneOffset() * 60_000;
+  return new Date(localTime).toISOString().slice(0, 10);
+};
+
+const getExpenseDate = (item: ExpenseItem): string => {
+  if (item.expense_date) return item.expense_date;
+  if (item.created_at) return item.created_at.slice(0, 10);
+  return getTodayDateString();
+};
+
+const getExpenseTimestamp = (item: ExpenseItem): string => {
+  return item.created_at || `${getExpenseDate(item)}T00:00:00.000Z`;
+};
+
+const sortExpensesByLatestDate = (items: ExpenseItem[]): ExpenseItem[] => {
+  return [...items].sort((left, right) => {
+    const dateCompare = getExpenseDate(right).localeCompare(getExpenseDate(left));
+    if (dateCompare !== 0) return dateCompare;
+
+    return getExpenseTimestamp(right).localeCompare(getExpenseTimestamp(left));
+  });
+};
+
 export default function useExpenseBook({
   supabase,
   userEmail,
@@ -131,6 +156,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newAmount, setNewAmount] = useState("");
+  const [newExpenseDate, setNewExpenseDate] = useState(getTodayDateString);
   const [newPayer, setNewPayer] = useState("");
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditExpenseDraft>({
@@ -138,6 +164,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
     amount: "",
     payer: "",
     currency: "JPY",
+    expenseDate: getTodayDateString(),
   });
   const [newAttachmentFile, setNewAttachmentFile] = useState<File | null>(null);
   const [editAttachmentFile, setEditAttachmentFile] = useState<File | null>(null);
@@ -150,6 +177,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
   } | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [activeCurrency, setActiveCurrency] = useState("ALL");
+  const [activeExpenseDate, setActiveExpenseDate] = useState("");
   const [formCurrency, setFormCurrency] = useState("JPY");
   const deleteConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expenseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -371,6 +399,7 @@ useEffect(() => {
                 amount: item.amount,
                 payer: item.payer,
                 currency: item.currency || "JPY",
+                expense_date: getExpenseDate(item),
                 attachment_bucket: item.attachment_bucket || ATTACHMENT_BUCKET,
                 attachment_path: null,
                 attachment_name: item.attachment_name || null,
@@ -500,12 +529,14 @@ useEffect(() => {
         ? lockedPayerName || newPayer || expenseMembers[0]
         : userEmail,
       currency: formCurrency,
+      expense_date: newExpenseDate || getTodayDateString(),
       ...attachmentFields,
     };
 
     const clearAddForm = () => {
       setNewTitle("");
       setNewAmount("");
+      setNewExpenseDate(getTodayDateString());
       setNewAttachmentFile(null);
     };
 
@@ -545,6 +576,7 @@ useEffect(() => {
       localStorage.setItem(storageKey, JSON.stringify(localBook));
 
       await reloadExpenses();
+      setActiveExpenseDate(newExpenseData.expense_date);
       clearAddForm();
       alert(
         selectedFile
@@ -564,6 +596,7 @@ useEffect(() => {
       localStorage.setItem("offline_expenses", JSON.stringify(localQueue));
 
       await reloadExpenses();
+      setActiveExpenseDate(newExpenseData.expense_date);
       clearAddForm();
       alert(
         selectedFile
@@ -615,6 +648,7 @@ useEffect(() => {
         // 讓畫面與 LocalStorage 保持一致。
         await reloadExpenses();
 
+        setActiveExpenseDate(newExpenseData.expense_date);
         clearAddForm();
       }
     } catch {
@@ -701,6 +735,7 @@ useEffect(() => {
       amount: Math.abs(Math.floor(Number(editDraft.amount))),
       payer: isUsingSharedExpenseBook ? editDraft.payer : userEmail,
       currency: editDraft.currency,
+      expense_date: editDraft.expenseDate || getExpenseDate(targetExpense),
     };
 
     if (editAttachmentFile) {
@@ -759,6 +794,7 @@ useEffect(() => {
         next.delete(String(id));
         return next;
       });
+      setActiveExpenseDate(updatedExpense.expense_date || getExpenseDate(updatedExpense));
       cancelEditExpenseHandler();
       return;
     }
@@ -776,6 +812,7 @@ useEffect(() => {
           amount: updatedExpense.amount,
           payer: updatedExpense.payer,
           currency: updatedExpense.currency,
+          expense_date: updatedExpense.expense_date,
           attachment_bucket: updatedExpense.attachment_bucket || ATTACHMENT_BUCKET,
           attachment_path: updatedExpense.attachment_path || null,
           attachment_name: updatedExpense.attachment_name || null,
@@ -819,6 +856,7 @@ useEffect(() => {
         next.delete(String(id));
         return next;
       });
+      setActiveExpenseDate(savedExpense.expense_date || getExpenseDate(savedExpense));
       cancelEditExpenseHandler();
     } catch {
       alert("無法連接雲端資料庫，目前無法修改雲端歷史帳目。");
@@ -869,7 +907,31 @@ useEffect(() => {
     }
 
     setPendingDeleteId(null);
-    setExpenses(currentExpenses.filter((item) => String(item.id) !== targetId));
+    const nextExpenses = currentExpenses.filter(
+      (item) => String(item.id) !== targetId,
+    );
+    const deletedDate = getExpenseDate(targetExpense);
+    if (activeExpenseDate === deletedDate) {
+      const remainingDates = Array.from(
+        new Set(
+          sortExpensesByLatestDate(nextExpenses)
+            .filter(
+              (item) =>
+                effectiveActiveCurrency === "ALL" ||
+                (item.currency || currentCurrencyCode) === effectiveActiveCurrency,
+            )
+            .map(getExpenseDate),
+        ),
+      );
+      if (!remainingDates.includes(deletedDate)) {
+        const nearestNewerDate = remainingDates
+          .filter((date) => date > deletedDate)
+          .at(-1);
+        const nearestOlderDate = remainingDates.find((date) => date < deletedDate);
+        setActiveExpenseDate(nearestNewerDate ?? nearestOlderDate ?? "");
+      }
+    }
+    setExpenses(nextExpenses);
     void finalizeDeleteExpense(targetExpense, targetIndex);
   };
 
@@ -1207,7 +1269,7 @@ useEffect(() => {
     const worksheet = workbook.addWorksheet("Expenses");
 
     const rows: Array<(string | number)[]> = [
-      ["消費項目", "支出人", "幣別代碼", "幣別符號", "金額", "附件下載連結"],
+      ["記帳日期", "消費項目", "支出人", "幣別代碼", "幣別符號", "金額", "附件下載連結"],
     ];
 
     const hyperlinkRows: Array<{ index: number; url: string; text: string }> = [];
@@ -1232,6 +1294,7 @@ useEffect(() => {
       const attachmentName = item.attachment_name || "無附件";
 
       rows.push([
+        getExpenseDate(item),
         item.title,
         item.payer || "未知",
         currencyCode,
@@ -1253,7 +1316,7 @@ useEffect(() => {
 
     for (const link of hyperlinkRows) {
       const row = worksheet.getRow(link.index);
-      const hyperlinkCell = row.getCell(6);
+      const hyperlinkCell = row.getCell(7);
       hyperlinkCell.value = {
         text: link.text,
         hyperlink: link.url,
@@ -1339,7 +1402,7 @@ useEffect(() => {
     URL.revokeObjectURL(url);
   };
 
-  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeExpenses = sortExpensesByLatestDate(Array.isArray(expenses) ? expenses : []);
   const availableCurrencies = SUPPORTED_CURRENCIES.filter((currency) =>
     safeExpenses.some(
       (expense) => (expense.currency || currentCurrencyCode) === currency.code,
@@ -1357,6 +1420,25 @@ useEffect(() => {
     const itemCurrency = item.currency || currentCurrencyCode;
     return itemCurrency === effectiveActiveCurrency;
   });
+
+  const availableExpenseDates = Array.from(
+    new Set(filteredExpenses.map(getExpenseDate)),
+  ).sort();
+
+  useEffect(() => {
+    if (availableExpenseDates.length === 0) {
+      if (activeExpenseDate) setActiveExpenseDate("");
+      return;
+    }
+
+    if (!availableExpenseDates.includes(activeExpenseDate)) {
+      setActiveExpenseDate(availableExpenseDates.at(-1) ?? "");
+    }
+  }, [activeExpenseDate, availableExpenseDates]);
+
+  const dateFilteredExpenses = activeExpenseDate
+    ? filteredExpenses.filter((item) => getExpenseDate(item) === activeExpenseDate)
+    : [];
 
 // =========================================
 // 待同步照片數
@@ -1535,6 +1617,8 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
     setNewTitle,
     newAmount,
     setNewAmount,
+    newExpenseDate,
+    setNewExpenseDate,
     newPayer,
     setNewPayer,
     editingExpenseId,
@@ -1555,6 +1639,10 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
     availableCurrencies,
     effectiveActiveCurrency,
     filteredExpenses,
+    activeExpenseDate,
+    setActiveExpenseDate,
+    availableExpenseDates,
+    dateFilteredExpenses,
     pendingAttachmentCount,
     hasUnsyncedLocalExpenseAttachments,
     attachmentSyncLabel,

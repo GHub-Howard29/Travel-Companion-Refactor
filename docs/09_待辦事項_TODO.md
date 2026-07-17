@@ -1,6 +1,6 @@
-# 開發進度與待辦事項
+﻿# 開發進度與待辦事項
 
-> Version：V3.1.5
+> Version：V3.2.0
 >
 > 最後更新：2026-07-13
 
@@ -97,6 +97,8 @@
 
 Travel Tool 模組化落地。
 
+本階段目標是整理程式結構，不改變已完成的 UI 或使用方式。優先將各工具入口、工具型別判斷、是否需要登入、頁首樣式與特殊資訊判斷等規則集中，降低 `App.tsx` 與 Sidebar 的耦合，讓後續帳本功能開發更穩定。
+
 ---
 
 # 五、下一步工作
@@ -177,6 +179,16 @@ Travel Tool 模組化落地。
 
 Expense Module
 
+預計開發：
+
+- [ ] 帳本 UI 改善。
+- [x] 新增 / 編輯帳目支援記帳日期。
+- [x] 帳本依記帳日期建立每日分頁，僅顯示有帳目的日期並由舊到新排列。
+- [x] 帳目列表改為最新資料優先顯示。
+- [x] Excel 匯出新增記帳日期欄位。
+- [x] 已執行 `docs/sql/007_expense_date_schema.sql` 與 `docs/sql/008_expense_date_validation.sql`，雲端欄位、index 與回填驗證皆通過。
+- [ ] 附件管理改善。
+
 近期補強：
 
 - [x] 記帳本編輯既有帳目時，附件區需支援「移除附件」而非只能更換檔案。
@@ -229,6 +241,13 @@ Expense Module
 - [x] 共同檢查清單 App 內新增 / 編輯 / 刪除項目第一版
 - [x] 共同檢查清單管理入口已收合為「管理 / 退出」模式
 - [x] 私人確認清單管理入口已收合為「管理 / 退出」模式
+- [x] 共同檢查清單已確認使用 `localStorage` 做本機持久化，並已接上 Supabase 最小雲端同步。
+- [x] 共同檢查清單同步策略定案為最後成功上傳到雲端的資料為準；下一次讀取時再同步回本機。
+
+暫不規劃：
+
+- Checklist Pending Queue：共同清單目前不另做離線待上傳操作佇列。
+- Checklist Conflict Resolution：共同清單目前不做複雜衝突合併，採最後成功上傳的雲端資料為準。
 
 ---
 
@@ -291,34 +310,41 @@ Trip 管理
 - [x] 驗證 Other Info Supabase schema / RLS SQL
 - [x] 修正 Other Info schema 新增後的 Supabase advisor findings：helper functions 固定 `search_path`，並補上 `created_by` index。
 - [x] 領隊導遊聯絡資訊 / 自駕租車資訊與一般其他資訊分類完成資料隔離。
-- [ ] 實機回歸 Other Info 雲端同步
-- [ ] 多人協作
+- [ ] 若有回報 BUG 或 Product Owner 提出待改善功能計畫，再針對 Other Info 雲端同步與多人協作行為安排修改。
 
 ---
 
-## 發布前人工收尾（V3.1.5）
+## 發布前人工收尾（V3.2.0）
 
 - [ ] Product Owner 手動將 `develop` 合併到 `main`。
 - [ ] Product Owner 手動執行版本發布 / 部署流程。
-- [ ] 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.5。
-- [ ] 部署後實機回歸 Android PWA 馬上更新 reload fallback 與 iOS Safari 網頁更新提示。
+- [x] 已執行 `docs/sql/007_expense_date_schema.sql` 與 `docs/sql/008_expense_date_validation.sql`。
+- [ ] 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.2.0。
+- [ ] 部署後實機回歸記帳日期新增 / 編輯、舊帳目相容日期、最新日期優先排序與 XLSX 匯出日期欄位。
 - [ ] 部署後實機回歸非強制更新提示、馬上更新清暫存、稍後更新再次提醒。
 - [ ] 部署後實機回歸新增 / 編輯旅程 `名稱=Email` 欄位、可編輯者 Email 權限說明與付款人鎖定。
 - [ ] 部署後實機回歸 TWD / JPY / KRW 整數分攤、KRW / EUR 幣別頁籤與帳本匯出。
 - [ ] 部署後實機回歸 iOS PWA 登入、照片附件、畫面縮放與特殊資訊 / 其他資訊資料隔離。
 - [ ] 若 iOS PWA Google 兩步驗證仍被導到 YouTube / Google App，請改選其他驗證方式或 Safari 網頁模式登入，並回報錯誤畫面。
 
+## Supabase Advisor 待改善
+
+- [ ] 評估既有 `public.tc_*` functions 的 `search_path` / `SECURITY DEFINER` advisors，確認是否需收斂 execute 權限或調整 function 定義。
+- [ ] 評估既有 `expenses` / `checklists` / `checklist_items` RLS initplan performance advisors，確認是否調整為 `(select auth.uid())` 等寫法。
+- [ ] 觀察新建 `expenses_trip_expense_date_idx` 是否於 V3.2.0 發布後被實際查詢使用；剛建立即被列為 unused index 屬正常早期狀態。
+
 ---
 
-# 六、未來規劃
+# 六、取消或暫不規劃項目
 
-旅行工具：
+以下項目不列入目前預計開發範圍；未來若 Product Owner 重新提出，再另行規格確認：
 
-- [ ] 預約紀錄
-- [ ] 行李清單
-- [ ] 旅行日誌
-- [ ] 保險資訊
-- [ ] AI 助手
+- 預約紀錄
+- 行李清單
+- 旅行日誌
+- 保險資訊
+- AI 助手
+- 新 Travel Tool 擴充
 
 ---
 

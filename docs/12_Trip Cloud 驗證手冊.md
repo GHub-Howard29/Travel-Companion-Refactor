@@ -1,4 +1,4 @@
-# Trip Cloud 驗證手冊
+﻿# Trip Cloud 驗證手冊
 
 > Travel Companion V3-1
 >

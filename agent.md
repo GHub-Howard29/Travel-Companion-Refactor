@@ -1,5 +1,11 @@
 # Travel Companion Agent Guide
 
+## 目前 3.2.0 開發紀錄（未合併、未發布）
+
+- 版本更新提示僅顯示：「帳本使用方式優化。」與「行程管理編輯流程優化。」
+- 完整變更請參考 `docs/07_版本更新紀錄.md` 的 V3.2.0 開發紀錄。
+- 本輪完成帳本每日日期分頁、行程管理分頁保留、編輯捲動及行程說明格式保留。
+
 ## 最新交接摘要（2026-07-13）
 
 本節是給另一台電腦 / 新 Codex thread 接續用的最新狀態。進入專案後請先讀本節，再依任務查閱 `docs/001 V3-1_Handoff.md`、`docs/002 V3-1_Architecture_Decisions.md`、`docs/04_資料庫設計.md`、`docs/09_待辦事項(TODO).md`。
@@ -7,7 +13,7 @@
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新收尾版本：V3.1.5（Android / iOS 更新提示流程補強）
+- 最新收尾版本：V3.2.0（帳本記帳日期第一階段）
 - 前一個功能 commit：`1fc8e62 保留未同步其他資訊內容`
 - 目前只允許留下 `.codex-remote-attachments/` 這類對話附件暫存未追蹤；程式與文件修改完成後應直接建立繁體中文 commit。
 - 尚未確認是否已 push 到遠端。
@@ -106,7 +112,16 @@ V3-1 目前已完成：
   - Android PWA 馬上更新加入 1.5 秒 reload fallback，降低點擊後提示停住但未更新的情況。
   - iOS Safari 網頁模式也會顯示版本更新提示；桌面一般瀏覽器仍不主動提示。
   - `src/config/appVersion.ts`、`public/app-version.json`、`src/config/versionHistory.ts`、`package.json`、`package-lock.json` 與文件已同步到 V3.1.5。
-  - 下一步由 Product Owner 手動將 `develop` 合併到 `main`，再執行發布流程。
+- V3.2.0 已完成：
+  - 記帳本新增 `expense_date` 記帳日期欄位。
+  - 新增帳目預設今天日期，編輯既有帳目時可調整記帳日期。
+  - 舊帳目讀取時會用 `expense_date -> created_at -> 今天` 補上相容日期。
+  - 帳目列表改為依記帳日期最新優先排序，同日再依建立時間排序。
+  - XLSX 匯出新增「記帳日期」欄位。
+  - 新增 `docs/sql/007_expense_date_schema.sql` 與 `docs/sql/008_expense_date_validation.sql`。
+  - `src/config/appVersion.ts`、`public/app-version.json`、`src/config/versionHistory.ts`、`package.json`、`package-lock.json` 與文件已同步到 V3.2.0。
+  - 已於 2026/07/13 將 `007_expense_date_schema.sql` 套用至 Supabase `travel-companion-db`，並以 `008_expense_date_validation.sql` 驗證欄位、index 與資料回填皆通過。
+  - Supabase advisors 仍有既有 security / performance warnings，已列入 TODO 待後續獨立評估。
 
 ### 本輪已完成修改
 
@@ -182,25 +197,34 @@ V3-1 目前已完成：
 
 最高優先：
 
-- Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.5。
-- 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.1.5。
+- Product Owner 手動合併 `develop` 到 `main` 並發布 V3.2.0。
+- 部署後以手機重新安裝 App，確認安裝資訊與 App 內版本皆為 V3.2.0。
+- 實機回歸 V3.2.0 記帳日期新增 / 編輯、舊帳目相容日期、最新日期優先排序與 XLSX 匯出日期欄位。
 - 實機回歸 V3.1.5 Android PWA 馬上更新 reload fallback、iOS Safari 網頁更新提示，以及 V3.1.4 旅程 `名稱=Email` 欄位、幣別清單與 TWD / JPY / KRW 整數分攤。
 - 實機回歸 iOS PWA Google 登入、照片附件上傳 / 開啟、輸入框縮放。
 - 實機回歸領隊導遊聯絡資訊 / 自駕租車資訊與一般「其他資訊」分類互不污染。
 - 實機測試 `super_admin` 新增旅程、`trip_editor` 編輯旅程。
 - Guest 瀏覽旅程已於 2026-07-11 本機 App 驗證通過。
-- Other Info / Reference 權限過濾、「管理 / 退出」模式、Supabase schema / RLS 與前端最小雲端同步已完成；下一步是實機回歸。
+- Other Info / Reference 權限過濾、「管理 / 退出」模式、Supabase schema / RLS 與前端最小雲端同步已完成；若有 BUG 回報或 Product Owner 提出待改善功能計畫，再安排修改。
 
 仍待評估：
 
-- 共同檢查清單是否要支援 App 內新增 / 編輯 / 刪除 item。
-- Checklist Pending Queue：離線或同步失敗時暫存待上傳操作的佇列。
-- Checklist Conflict Resolution：本機與雲端同一筆清單資料都被修改時的合併或取捨規則。
 - 是否要將 `admin_users` 中長期補上 `user_id uuid`。
   - 目前程式與 SQL 仍可沿用 `email + role + trip_id`，新增 `trip_editor` 只需維護 Supabase 表格，不需改程式。
   - 若未來 RLS 想更穩，可再補 `user_id`。
-- 其他資訊 / 參考資訊已完成 Supabase schema / RLS 與最小雲端同步；尚未做多人協作衝突處理。
 - Vite chunk size warning 尚未處理。
+
+取消或暫不規劃：
+
+- Checklist Pending Queue：共同清單目前不另做離線待上傳操作佇列。
+- Checklist Conflict Resolution：共同清單目前不做複雜衝突合併，採最後成功上傳的雲端資料為準。
+- 新 Travel Tool：預約紀錄、行李清單、旅行日誌、保險資訊、AI 助手等目前不列入預計開發。
+
+下一步開發順序：
+
+1. 先完成 V3.2.0 實機回歸與發布。
+2. 再接帳本依記帳日期分頁 / 分組。
+3. 後續再做帳本 UI 改善與附件管理改善。
 
 ### 重要檔案
 
@@ -255,7 +279,9 @@ Trip Management：
 
 1. 新對話先確認文件是否已同步到共同清單最新狀態。
 2. 建議範圍：
-   - Product Owner 手動合併 `develop` 到 `main` 並發布 V3.1.5。
+   - Product Owner 手動執行 V3.2.0 Expense Date SQL。
+   - Product Owner 手動合併 `develop` 到 `main` 並發布 V3.2.0。
+   - 使用共用帳本完成記帳日期新增 / 編輯 / 排序 / 匯出回歸。
    - 使用 `super_admin` / `trip_editor` 帳號完成 Trip Cloud 實機驗證。
    - 使用 `super_admin` / `trip_editor` 帳號完成 Other Info 雲端同步實機回歸。
 3. 每次交付前執行：
@@ -357,19 +383,19 @@ npm run lint
 - `docs/09_待辦事項(TODO).md`：待辦與後續工作。
 - `docs/11_名詞定義.md`：專案名詞。
 
-注意：部分文件目前可能有編碼顯示問題。若內容在終端顯示亂碼，請交叉參考檔名、程式碼、README 與其他文件，不要直接覆蓋原文件。
+注意：`docs/*.md` 已重存為 UTF-8 with BOM，並新增 `.editorconfig` / `.gitattributes` 固定 Markdown 編碼與 LF 換行；後續若新增 Markdown，請維持相同設定。
 
 ## 目前專案狀態摘要
 
-目前主線接近 V3 / V3-1 重構階段：
+目前主線已完成 V3.2.0 帳本記帳日期第一階段，發布前仍需 Product Owner 手動合併 `develop` 到 `main`、部署並完成實機回歸：
 
 - 已有基本旅程載入、行程、清單、共同支出、附件同步、Excel 匯出等功能。
 - `Expense` 模組已拆出 components / hooks / utils / storage / types。
-- V3-1 正在處理 `Other Info` / Reference 類功能的本機資料管理與架構基礎。
+- V3-1 的 `Other Info` / Reference 本機管理與最小雲端同步已完成第一階段。
 - Checklist Module 已完成第一階段拆分，勾選狀態使用 Trip-scoped localStorage persistence。
 - V3-1 已定義 `Folder` 應為通用 Tree 結構，不再用 `FolderType` 或 `category` 硬編碼分類。
 - `OtherInfoService` 是 UI 取得 Folder / Item 的入口，UI 不應直接依賴 constants 或 storage 細節。
-- `OtherInfoPage` 目前已有簡易管理 UI，可新增、編輯、刪除資料；目前只寫入 localStorage，不同步雲端。
+- `OtherInfoPage` 目前已有管理 UI，可新增、編輯、刪除資料，並透過 Supabase 進行最小雲端同步；本機資料仍作為備援。
 
 ## 目前目錄結構重點
 

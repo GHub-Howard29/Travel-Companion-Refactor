@@ -22,6 +22,11 @@ import type {
   TripMeta,
   TripMode,
 } from "../../types";
+import {
+  expandSidebarItemsWithPrivateChecklist,
+  isSelfGuidedSpecialInfoIcon,
+  shouldUseSpecialInfoIcon,
+} from "../../utils/travelToolRegistry";
 
 interface AppSidebarProps {
   isMenuOpen: boolean;
@@ -46,14 +51,8 @@ interface AppSidebarProps {
 }
 
 const renderSidebarIcon = (item: SidebarItemConfig, tripMode?: TripMode) => {
-  const isSpecialInfoItem = item.id === "trip_special_info" || item.type === "text";
-
-  if (isSpecialInfoItem) {
-    const isSelfGuided =
-      tripMode === "selfGuided" ||
-      (!tripMode && (item.title.includes("自駕") || item.title.includes("租車")));
-
-    return isSelfGuided ? (
+  if (shouldUseSpecialInfoIcon(item)) {
+    return isSelfGuidedSpecialInfoIcon(item, tripMode) ? (
       <CarFront size={18} />
     ) : (
       <IdCard size={18} />
@@ -99,20 +98,10 @@ export default function AppSidebar({
   appVersion,
   onOpenVersionInfo,
 }: AppSidebarProps) {
-  const sidebarItems = currentTrip?.sidebarConfig.flatMap<SidebarItemConfig>((item) => {
-    if (item.type !== "checklist" || !userEmail) {
-      return [item];
-    }
-
-    return [
-      item,
-      {
-        id: "privateChecklist",
-        title: "私人確認清單",
-        type: "privateChecklist",
-      },
-    ];
-  });
+  const sidebarItems = expandSidebarItemsWithPrivateChecklist(
+    currentTrip?.sidebarConfig,
+    userEmail,
+  );
 
   return (
     <>
