@@ -293,7 +293,7 @@ export const ItineraryPage = ({
                 {event.title}
               </h3>
               {event.desc && (
-                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                <p className="mb-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600">
                   {event.desc}
                 </p>
               )}

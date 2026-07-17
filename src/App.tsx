@@ -142,6 +142,10 @@ export default function App() {
     availableCurrencies,
     effectiveActiveCurrency,
     filteredExpenses,
+    activeExpenseDate,
+    setActiveExpenseDate,
+    availableExpenseDates,
+    dateFilteredExpenses,
     pendingAttachmentCount,
     hasUnsyncedLocalExpenseAttachments,
     attachmentSyncLabel,
@@ -605,6 +609,10 @@ export default function App() {
                 userEmail={userEmail}
                 safeExpenses={safeExpenses}
                 filteredExpenses={filteredExpenses}
+                activeExpenseDate={activeExpenseDate}
+                setActiveExpenseDate={setActiveExpenseDate}
+                availableExpenseDates={availableExpenseDates}
+                dateFilteredExpenses={dateFilteredExpenses}
                 availableCurrencies={availableCurrencies}
                 effectiveActiveCurrency={effectiveActiveCurrency}
                 setActiveCurrency={setActiveCurrency}

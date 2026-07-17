@@ -183,7 +183,7 @@ Expense Module
 
 - [ ] 帳本 UI 改善。
 - [x] 新增 / 編輯帳目支援記帳日期。
-- [ ] 帳本依記帳日期分頁或分組。
+- [x] 帳本依記帳日期建立每日分頁，僅顯示有帳目的日期並由舊到新排列。
 - [x] 帳目列表改為最新資料優先顯示。
 - [x] Excel 匯出新增記帳日期欄位。
 - [x] 已執行 `docs/sql/007_expense_date_schema.sql` 與 `docs/sql/008_expense_date_validation.sql`，雲端欄位、index 與回填驗證皆通過。

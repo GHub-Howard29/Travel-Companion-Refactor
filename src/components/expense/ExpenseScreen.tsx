@@ -21,6 +21,10 @@ interface ExpenseScreenProps {
   userEmail: string | null;
   safeExpenses: ExpenseItem[];
   filteredExpenses: ExpenseItem[];
+  activeExpenseDate: string;
+  setActiveExpenseDate: (date: string) => void;
+  availableExpenseDates: string[];
+  dateFilteredExpenses: ExpenseItem[];
   availableCurrencies: Array<{ code: string; name: string; symbol: string }>;
   effectiveActiveCurrency: string;
   setActiveCurrency: (currency: string) => void;
@@ -79,6 +83,10 @@ export default function ExpenseScreen({
   userEmail,
   safeExpenses,
   filteredExpenses,
+  activeExpenseDate,
+  setActiveExpenseDate,
+  availableExpenseDates,
+  dateFilteredExpenses,
   availableCurrencies,
   effectiveActiveCurrency,
   setActiveCurrency,
@@ -127,6 +135,12 @@ export default function ExpenseScreen({
   onRemoveEditAttachment,
   onRestoreEditAttachment,
 }: ExpenseScreenProps) {
+  const formatExpenseDateTab = (date: string) => {
+    const value = new Date(`${date}T00:00:00`);
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    return `${value.getMonth() + 1}/${value.getDate()}（${weekdays[value.getDay()]}）`;
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex bg-slate-200/70 p-1 rounded-xl gap-1 shadow-inner">
@@ -339,7 +353,7 @@ export default function ExpenseScreen({
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
               required
             />
-            <label className="space-y-1 text-xs font-bold text-slate-500">
+            <label className="order-first space-y-1 text-xs font-bold text-slate-500">
               <span>記帳日期</span>
               <input
                 type="date"
@@ -471,10 +485,28 @@ export default function ExpenseScreen({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
+        {availableExpenseDates.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {availableExpenseDates.map((date) => (
+              <button
+                key={date}
+                type="button"
+                onClick={() => setActiveExpenseDate(date)}
+                className={`rounded-lg px-2 py-2 text-xs font-bold transition-colors ${
+                  activeExpenseDate === date
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {formatExpenseDateTab(date)}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm divide-y divide-slate-100">
-          {filteredExpenses.length > 0 ? (
-            filteredExpenses.map((item) => {
+          {dateFilteredExpenses.length > 0 ? (
+            dateFilteredExpenses.map((item) => {
               if (!item || !item.title) return null;
 
               const targetConfig = SUPPORTED_CURRENCIES.find(

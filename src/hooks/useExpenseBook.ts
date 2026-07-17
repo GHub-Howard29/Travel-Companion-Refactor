@@ -177,6 +177,7 @@ const reloadExpenses = useCallback(async (bookId = expenseBookTripId) => {
   } | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [activeCurrency, setActiveCurrency] = useState("ALL");
+  const [activeExpenseDate, setActiveExpenseDate] = useState("");
   const [formCurrency, setFormCurrency] = useState("JPY");
   const deleteConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expenseRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -575,6 +576,7 @@ useEffect(() => {
       localStorage.setItem(storageKey, JSON.stringify(localBook));
 
       await reloadExpenses();
+      setActiveExpenseDate(newExpenseData.expense_date);
       clearAddForm();
       alert(
         selectedFile
@@ -594,6 +596,7 @@ useEffect(() => {
       localStorage.setItem("offline_expenses", JSON.stringify(localQueue));
 
       await reloadExpenses();
+      setActiveExpenseDate(newExpenseData.expense_date);
       clearAddForm();
       alert(
         selectedFile
@@ -645,6 +648,7 @@ useEffect(() => {
         // 讓畫面與 LocalStorage 保持一致。
         await reloadExpenses();
 
+        setActiveExpenseDate(newExpenseData.expense_date);
         clearAddForm();
       }
     } catch {
@@ -790,6 +794,7 @@ useEffect(() => {
         next.delete(String(id));
         return next;
       });
+      setActiveExpenseDate(updatedExpense.expense_date || getExpenseDate(updatedExpense));
       cancelEditExpenseHandler();
       return;
     }
@@ -851,6 +856,7 @@ useEffect(() => {
         next.delete(String(id));
         return next;
       });
+      setActiveExpenseDate(savedExpense.expense_date || getExpenseDate(savedExpense));
       cancelEditExpenseHandler();
     } catch {
       alert("無法連接雲端資料庫，目前無法修改雲端歷史帳目。");
@@ -901,7 +907,31 @@ useEffect(() => {
     }
 
     setPendingDeleteId(null);
-    setExpenses(currentExpenses.filter((item) => String(item.id) !== targetId));
+    const nextExpenses = currentExpenses.filter(
+      (item) => String(item.id) !== targetId,
+    );
+    const deletedDate = getExpenseDate(targetExpense);
+    if (activeExpenseDate === deletedDate) {
+      const remainingDates = Array.from(
+        new Set(
+          sortExpensesByLatestDate(nextExpenses)
+            .filter(
+              (item) =>
+                effectiveActiveCurrency === "ALL" ||
+                (item.currency || currentCurrencyCode) === effectiveActiveCurrency,
+            )
+            .map(getExpenseDate),
+        ),
+      );
+      if (!remainingDates.includes(deletedDate)) {
+        const nearestNewerDate = remainingDates
+          .filter((date) => date > deletedDate)
+          .at(-1);
+        const nearestOlderDate = remainingDates.find((date) => date < deletedDate);
+        setActiveExpenseDate(nearestNewerDate ?? nearestOlderDate ?? "");
+      }
+    }
+    setExpenses(nextExpenses);
     void finalizeDeleteExpense(targetExpense, targetIndex);
   };
 
@@ -1391,6 +1421,25 @@ useEffect(() => {
     return itemCurrency === effectiveActiveCurrency;
   });
 
+  const availableExpenseDates = Array.from(
+    new Set(filteredExpenses.map(getExpenseDate)),
+  ).sort();
+
+  useEffect(() => {
+    if (availableExpenseDates.length === 0) {
+      if (activeExpenseDate) setActiveExpenseDate("");
+      return;
+    }
+
+    if (!availableExpenseDates.includes(activeExpenseDate)) {
+      setActiveExpenseDate(availableExpenseDates.at(-1) ?? "");
+    }
+  }, [activeExpenseDate, availableExpenseDates]);
+
+  const dateFilteredExpenses = activeExpenseDate
+    ? filteredExpenses.filter((item) => getExpenseDate(item) === activeExpenseDate)
+    : [];
+
 // =========================================
 // 待同步照片數
 // 只要本機存在附件、且尚未同步完成，
@@ -1590,6 +1639,10 @@ const pendingAttachmentCount = isUsingSharedExpenseBook
     availableCurrencies,
     effectiveActiveCurrency,
     filteredExpenses,
+    activeExpenseDate,
+    setActiveExpenseDate,
+    availableExpenseDates,
+    dateFilteredExpenses,
     pendingAttachmentCount,
     hasUnsyncedLocalExpenseAttachments,
     attachmentSyncLabel,
