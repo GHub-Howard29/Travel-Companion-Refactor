@@ -1,5 +1,14 @@
 # Travel Companion Agent Guide
 
+## V3.3.0 發布交接（2026-07-20）
+
+- V3.3.0 外幣換算已完成 Product Owner 全數回歸驗證與程式提交；發布由 Product Owner 手動執行。
+- 已驗證：臺銀參考匯率載入／離線使用、雙估算結果、換匯 CRUD、Trip 隔離、guest/user 本機隔離、trip_editor/super_admin 雲端同步、跨瀏覽器即時同步、刪除不復活、輸入千分位與新 App 圖示。
+- 權限白話規則：未登入／已登入 Gmail 者，換匯資料僅保留在本機；管理員／已登記完成的旅程成員，可同步所屬旅程的雲端換匯歷史紀錄。
+- 雲端同步採取：頁面開啟時讀取、Supabase Realtime 推播、視窗重新聚焦與計算機欄位聚焦時補抓、寫入後以雲端結果回寫。雲端歷史初始化後以雲端為準，防止舊快取復活已刪除紀錄。
+- Supabase 正式專案 `travel-companion-db` 已部署 `taiwan-bank-exchange-rate` Edge Function，並將 `exchange_purchases` 加入 `supabase_realtime` publication。
+- V3.4.0 前端載入效能優化維持待辦；僅在 Product Owner 完成 V3.3.0 手動發布後才能開始。
+
 ## 目前 V3.3.0 開發紀錄（待 Product Owner 手動回歸與發布）
 
 - V3.2.1 已於 2026-07-20 發布。
