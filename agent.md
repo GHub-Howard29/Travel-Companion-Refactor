@@ -1,25 +1,48 @@
-# Travel Companion Agent Guide
+﻿# Travel Companion Agent Guide
 
-## 目前 3.2.0 開發紀錄（未合併、未發布）
+## V3.3.0 發布交接（2026-07-20）
 
-- 版本更新提示僅顯示：「帳本使用方式優化。」與「行程管理編輯流程優化。」
-- 完整變更請參考 `docs/07_版本更新紀錄.md` 的 V3.2.0 開發紀錄。
-- 本輪完成帳本每日日期分頁、行程管理分頁保留、編輯捲動及行程說明格式保留。
+- V3.3.0 外幣換算已完成 Product Owner 全數回歸驗證與程式提交；發布由 Product Owner 手動執行。
+- 已驗證：臺銀參考匯率載入／離線使用、雙估算結果、換匯 CRUD、Trip 隔離、guest/user 本機隔離、trip_editor/super_admin 雲端同步、跨瀏覽器即時同步、刪除不復活、輸入千分位與新 App 圖示。
+- 權限白話規則：未登入／已登入 Gmail 者，換匯資料僅保留在本機；管理員／已登記完成的旅程成員，可同步所屬旅程的雲端換匯歷史紀錄。
+- 雲端同步採取：頁面開啟時讀取、Supabase Realtime 推播、視窗重新聚焦與計算機欄位聚焦時補抓、寫入後以雲端結果回寫。雲端歷史初始化後以雲端為準，防止舊快取復活已刪除紀錄。
+- Supabase 正式專案 `travel-companion-db` 已部署 `taiwan-bank-exchange-rate` Edge Function，並將 `exchange_purchases` 加入 `supabase_realtime` publication。
+- V3.4.0 前端載入效能優化維持待辦；僅在 Product Owner 完成 V3.3.0 手動發布後才能開始。
 
-## 最新交接摘要（2026-07-13）
+## 目前 V3.3.0 開發紀錄（待 Product Owner 手動回歸與發布）
+
+- V3.2.1 已於 2026-07-20 發布。
+- V3.3.0 已完成外幣換算核心功能；完整內容請參考 `docs/07_版本更新紀錄.md` 的 V3.3.0 紀錄。
+- 本輪新增依 Trip 隔離的外幣換算 Travel Tool，支援 JPY／KRW／USD／EUR 換匯紀錄、加權平均匯率與外幣轉 TWD 試算。
+- V3.3.0 發布前不得開啟其他新版本；小修正一律歸屬 V3.3.0。
+- V3.4.0 已預先規劃為前端載入效能優化：僅在 V3.3.0 主功能回歸全數通過、無已知待改善問題且完成發布後才可開始。
+
+## 最新交接摘要（2026-07-20）
 
 本節是給另一台電腦 / 新 Codex thread 接續用的最新狀態。進入專案後請先讀本節，再依任務查閱 `docs/001 V3-1_Handoff.md`、`docs/002 V3-1_Architecture_Decisions.md`、`docs/04_資料庫設計.md`、`docs/09_待辦事項(TODO).md`。
 
 ### 目前 Git 狀態
 
 - Branch：`develop`
-- 最新收尾版本：V3.2.0（帳本記帳日期第一階段）
-- 前一個功能 commit：`1fc8e62 保留未同步其他資訊內容`
+- 已發布版本：V3.2.1。
+- 目前開發版本：V3.3.0（外幣換算，待人工回歸與發布）。
+- 最新功能 commit：`d85c519 新增外幣換算旅行工具`
 - 目前只允許留下 `.codex-remote-attachments/` 這類對話附件暫存未追蹤；程式與文件修改完成後應直接建立繁體中文 commit。
-- 尚未確認是否已 push 到遠端。
+- `d85c519` 尚未確認是否已 push 到遠端；推送前須取得 Product Owner 明確同意。
 - commit message 規則：使用者已要求「中文 commit」，後續 Codex 完成文件或程式修改後一律直接使用繁體中文 commit message 建立 commit，並回報實際使用的中文 commit message。
 
 ### 目前開發進度
+
+V3.3.0 已完成核心實作：
+
+- 外幣換算入口會由 `tripRepository` 自動加入所有既有與新建 Trip，位置在「旅費記帳本」之後。
+- `src/components/ExchangeRatePage.tsx` 提供換匯紀錄新增、編輯、刪除、加權平均匯率與外幣轉 TWD 試算。
+- `src/storage/exchangeRateStorage.ts` 以 `travel_companion_exchange_rate_{tripId}` 保存資料，確保不同 Trip 不互相讀寫。
+- 支援 JPY、KRW、USD、EUR；沒有換匯紀錄時，可手動載入臺灣銀行現金賣出參考匯率並離線使用快取。
+- 已部署受登入保護的 Supabase Edge Function `taiwan-bank-exchange-rate`，供前端安全取得臺灣銀行公開牌告並避開跨網域限制；函式不寫入資料庫。
+- 刪除 Trip 時會清除該 Trip 的本機換匯紀錄。
+- `npm run lint`、`npm run build` 已通過；Vite 仍有既有 bundle size warning。
+- 尚待 Product Owner 手動回歸：新增、編輯、刪除、不同 Trip 資料隔離與 F5 後資料保留。
 
 V3-1 目前已完成：
 
