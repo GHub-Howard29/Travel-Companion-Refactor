@@ -23,8 +23,11 @@ export default defineConfig({
         name: '我的旅行小幫手',
         short_name: '旅行小幫手',
         description: '我的最佳旅遊隨身特助',
-        theme_color: '#2e6b3e',
-        background_color: '#fcfbfa',
+        // Android PWA splash screen uses these manifest colors while the app
+        // bundle is loading. Keep them aligned with the travel artwork rather
+        // than the page's neutral content background.
+        theme_color: '#0b75b8',
+        background_color: '#38a9e0',
         display: 'standalone',
         orientation: 'portrait',
         id: '/Travel-Companion/',
@@ -34,12 +37,14 @@ export default defineConfig({
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }
