@@ -49,17 +49,17 @@ export const ExchangeRatePage = ({ tripId, defaultForeignCurrency, supabase, can
       const cloudPurchases = await getCloudExchangePurchases(supabase, tripId);
       if (!active) return;
       if (cloudPurchases === null) { setCloudStatus("error"); return; }
-      setPurchases((localPurchases) => {
-        const merged = new Map(localPurchases.map((item) => [item.id, item]));
-        cloudPurchases.forEach((item) => {
-          const local = merged.get(item.id);
-          if (!local || item.updatedAt >= local.updatedAt) merged.set(item.id, item);
-        });
-        const next = [...merged.values()];
-        writeExchangePurchases(tripId, next);
-        return next;
+      const localPurchases = readExchangePurchases(tripId);
+      const merged = new Map(localPurchases.map((item) => [item.id, item]));
+      cloudPurchases.forEach((item) => {
+        const local = merged.get(item.id);
+        if (!local || item.updatedAt >= local.updatedAt) merged.set(item.id, item);
       });
-      setCloudStatus("synced");
+      const next = [...merged.values()];
+      writeExchangePurchases(tripId, next);
+      setPurchases(next);
+      const synced = localPurchases.length === 0 || await upsertCloudExchangePurchases(supabase, next);
+      if (active) setCloudStatus(synced ? "synced" : "error");
     })();
     return () => { active = false; };
   }, [canSyncCloudHistory, supabase, tripId]);
