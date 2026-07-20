@@ -10,6 +10,7 @@ import {
 } from "../storage/exchangeReferenceRateStorage";
 import {
   readExchangePurchases,
+  type ExchangePurchaseStorageScope,
   writeExchangePurchases,
 } from "../storage/exchangeRateStorage";
 import {
@@ -18,7 +19,7 @@ import {
   upsertCloudExchangePurchases,
 } from "../services/exchangeRateCloudService";
 import { fetchTaiwanBankCashSellRate } from "../services/taiwanBankExchangeRateService";
-import { formatForeignAmount, formatRate, formatTwd } from "../utils/currencyFormat";
+import { formatForeignAmount, formatRate, formatTwd, formatTwdWithCode } from "../utils/currencyFormat";
 import { getExchangeSummary } from "../utils/exchangeRate";
 
 const CURRENCIES = ["JPY", "KRW", "USD", "EUR"];
@@ -47,6 +48,19 @@ const formatImportedAt = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 
+const formatCalculatorInput = (value: string): string => {
+  if (!value) return "";
+  const [integer, ...fraction] = value.split(".");
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return fraction.length > 0 ? `${groupedInteger}.${fraction.join("")}` : groupedInteger;
+};
+
+const normalizeCalculatorInput = (value: string): string => {
+  const normalized = value.replace(/,/g, "").replace(/[^0-9.]/g, "");
+  const [integer = "", ...fraction] = normalized.split(".");
+  return fraction.length > 0 ? `${integer}.${fraction.join("")}` : integer;
+};
+
 interface ExchangeRatePageProps {
   tripId: string;
   defaultForeignCurrency: string;
@@ -60,11 +74,14 @@ export const ExchangeRatePage = ({
   supabase,
   canSyncCloudHistory,
 }: ExchangeRatePageProps) => {
+  const storageScope: ExchangePurchaseStorageScope = canSyncCloudHistory
+    ? "cloud"
+    : "local";
   const initialCurrency = CURRENCIES.includes(defaultForeignCurrency)
     ? defaultForeignCurrency
     : "JPY";
   const [purchases, setPurchases] = useState(() =>
-    readExchangePurchases(tripId),
+    readExchangePurchases(tripId, storageScope),
   );
   const [selectedCurrency, setSelectedCurrency] = useState(initialCurrency);
   const [referenceRate, setReferenceRate] = useState<ExchangeReferenceRate | null>(
@@ -116,14 +133,14 @@ export const ExchangeRatePage = ({
         return;
       }
 
-      const localPurchases = readExchangePurchases(tripId);
+      const localPurchases = readExchangePurchases(tripId, storageScope);
       const merged = new Map(localPurchases.map((item) => [item.id, item]));
       cloudPurchases.forEach((item) => {
         const local = merged.get(item.id);
         if (!local || item.updatedAt >= local.updatedAt) merged.set(item.id, item);
       });
       const next = [...merged.values()];
-      writeExchangePurchases(tripId, next);
+      writeExchangePurchases(tripId, next, storageScope);
       setPurchases(next);
 
       const synced =
@@ -135,11 +152,11 @@ export const ExchangeRatePage = ({
     return () => {
       active = false;
     };
-  }, [canSyncCloudHistory, supabase, tripId]);
+  }, [canSyncCloudHistory, storageScope, supabase, tripId]);
 
   const persist = (next: TripExchangePurchase[]) => {
     setPurchases(next);
-    writeExchangePurchases(tripId, next);
+    writeExchangePurchases(tripId, next, storageScope);
     if (canSyncCloudHistory) {
       setCloudStatus("syncing");
       void upsertCloudExchangePurchases(supabase, next).then((synced) =>
@@ -322,8 +339,8 @@ export const ExchangeRatePage = ({
             {isImportingReferenceRate ? "載入中..." : "載入最新參考匯率"}
           </button>
           {importError && (
-            <p role="alert" className="mt-2 text-left text-xs font-semibold text-rose-700">
-              {importError}
+          <p role="alert" className="mt-2 text-left text-xs font-semibold text-rose-700">
+              無法載入臺灣銀行參考匯率（{importError}）。
             </p>
           )}
         </div>
@@ -338,11 +355,10 @@ export const ExchangeRatePage = ({
           輸入金額後，同時比較實際換匯紀錄與最近載入的臺銀參考匯率。
         </p>
         <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={calculatorAmount}
-          onChange={(event) => setCalculatorAmount(event.target.value)}
+          type="text"
+          inputMode="decimal"
+          value={formatCalculatorInput(calculatorAmount)}
+          onChange={(event) => setCalculatorAmount(normalizeCalculatorInput(event.target.value))}
           placeholder={`輸入 ${selectedCurrency} 金額`}
           disabled={!canCalculate}
           className="mt-3 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-slate-700 outline-none focus:border-amber-500 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -354,7 +370,7 @@ export const ExchangeRatePage = ({
               <p className="text-xs font-bold text-amber-800">依換匯紀錄估算</p>
               <p className="mt-1 text-lg font-extrabold text-amber-950">
                 {summary
-                  ? `${formatForeignAmount(calculatorValue, selectedCurrency)} ≈ ${formatTwd(calculatorValue * summary.weightedAverageRate)}`
+                  ? `${formatForeignAmount(calculatorValue, selectedCurrency)} ≈ ${formatTwdWithCode(calculatorValue * summary.weightedAverageRate)}`
                   : "尚無換匯紀錄"}
               </p>
             </div>
@@ -362,7 +378,7 @@ export const ExchangeRatePage = ({
               <p className="text-xs font-bold text-amber-800">依臺銀公告牌價估算</p>
               <p className="mt-1 text-lg font-extrabold text-amber-950">
                 {referenceRate
-                  ? `${formatForeignAmount(calculatorValue, selectedCurrency)} ≈ ${formatTwd(calculatorValue * referenceRate.rate)}`
+                  ? `${formatForeignAmount(calculatorValue, selectedCurrency)} ≈ ${formatTwdWithCode(calculatorValue * referenceRate.rate)}`
                   : "尚未載入臺銀參考匯率"}
               </p>
             </div>

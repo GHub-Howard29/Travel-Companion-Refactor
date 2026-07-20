@@ -2,6 +2,9 @@ export const formatTwd = (amount: number): string => new Intl.NumberFormat("zh-T
   style: "currency", currency: "TWD", maximumFractionDigits: 0,
 }).format(amount);
 
+export const formatTwdWithCode = (amount: number): string =>
+  `TWD ${new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 0 }).format(amount)}`;
+
 export const formatForeignAmount = (amount: number, currency: string): string =>
   `${new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 2 }).format(amount)} ${currency}`;
 

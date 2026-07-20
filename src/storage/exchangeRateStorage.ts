@@ -1,7 +1,12 @@
 import type { TripExchangePurchase } from "../types";
 
 const STORAGE_PREFIX = "travel_companion_exchange_rate";
-const getStorageKey = (tripId: string): string => `${STORAGE_PREFIX}_${tripId}`;
+export type ExchangePurchaseStorageScope = "local" | "cloud";
+
+const getStorageKey = (
+  tripId: string,
+  scope: ExchangePurchaseStorageScope,
+): string => `${STORAGE_PREFIX}_${scope}_${tripId}`;
 
 const isValidPurchase = (value: unknown): value is TripExchangePurchase => {
   if (!value || typeof value !== "object") return false;
@@ -13,8 +18,11 @@ const isValidPurchase = (value: unknown): value is TripExchangePurchase => {
     typeof item.createdAt === "string" && typeof item.updatedAt === "string";
 };
 
-export const readExchangePurchases = (tripId: string): TripExchangePurchase[] => {
-  const raw = localStorage.getItem(getStorageKey(tripId));
+export const readExchangePurchases = (
+  tripId: string,
+  scope: ExchangePurchaseStorageScope = "local",
+): TripExchangePurchase[] => {
+  const raw = localStorage.getItem(getStorageKey(tripId, scope));
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -24,10 +32,17 @@ export const readExchangePurchases = (tripId: string): TripExchangePurchase[] =>
   }
 };
 
-export const writeExchangePurchases = (tripId: string, purchases: TripExchangePurchase[]): void => {
-  localStorage.setItem(getStorageKey(tripId), JSON.stringify(purchases));
+export const writeExchangePurchases = (
+  tripId: string,
+  purchases: TripExchangePurchase[],
+  scope: ExchangePurchaseStorageScope = "local",
+): void => {
+  localStorage.setItem(getStorageKey(tripId, scope), JSON.stringify(purchases));
 };
 
-export const clearExchangePurchases = (tripId: string): void => {
-  localStorage.removeItem(getStorageKey(tripId));
+export const clearExchangePurchases = (
+  tripId: string,
+  scope: ExchangePurchaseStorageScope = "local",
+): void => {
+  localStorage.removeItem(getStorageKey(tripId, scope));
 };
