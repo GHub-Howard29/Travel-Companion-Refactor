@@ -9,6 +9,8 @@ import {
   writeExchangeReferenceRate,
 } from "../storage/exchangeReferenceRateStorage";
 import {
+  hasInitializedCloudExchangeHistory,
+  markCloudExchangeHistoryInitialized,
   readExchangePurchases,
   type ExchangePurchaseStorageScope,
   writeExchangePurchases,
@@ -134,19 +136,32 @@ export const ExchangeRatePage = ({
       }
 
       const localPurchases = readExchangePurchases(tripId, storageScope);
-      const merged = new Map(localPurchases.map((item) => [item.id, item]));
-      cloudPurchases.forEach((item) => {
-        const local = merged.get(item.id);
-        if (!local || item.updatedAt >= local.updatedAt) merged.set(item.id, item);
-      });
-      const next = [...merged.values()];
-      writeExchangePurchases(tripId, next, storageScope);
-      setPurchases(next);
+      const cloudWasInitialized = hasInitializedCloudExchangeHistory(tripId);
 
+      // Once this trip has a cloud history, the server is authoritative. This
+      // prevents an older browser cache from recreating a record deleted on
+      // another device.
+      if (cloudPurchases.length > 0 || cloudWasInitialized) {
+        writeExchangePurchases(tripId, cloudPurchases, storageScope);
+        setPurchases(cloudPurchases);
+        markCloudExchangeHistoryInitialized(tripId);
+        setCloudStatus("synced");
+        return;
+      }
+
+      // The very first successful cloud connection may migrate local records
+      // created before cloud history was available. It is a one-time action.
       const synced =
         localPurchases.length === 0 ||
-        (await upsertCloudExchangePurchases(supabase, next));
-      if (active) setCloudStatus(synced ? "synced" : "error");
+        (await upsertCloudExchangePurchases(supabase, localPurchases));
+      if (!active) return;
+
+      if (synced) {
+        writeExchangePurchases(tripId, localPurchases, storageScope);
+        setPurchases(localPurchases);
+        markCloudExchangeHistoryInitialized(tripId);
+      }
+      setCloudStatus(synced ? "synced" : "error");
     })();
 
     return () => {

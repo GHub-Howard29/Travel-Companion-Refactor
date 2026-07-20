@@ -8,6 +8,9 @@ const getStorageKey = (
   scope: ExchangePurchaseStorageScope,
 ): string => `${STORAGE_PREFIX}_${scope}_${tripId}`;
 
+const getCloudInitializedKey = (tripId: string): string =>
+  `${STORAGE_PREFIX}_cloud_initialized_${tripId}`;
+
 const isValidPurchase = (value: unknown): value is TripExchangePurchase => {
   if (!value || typeof value !== "object") return false;
   const item = value as Partial<TripExchangePurchase>;
@@ -45,4 +48,11 @@ export const clearExchangePurchases = (
   scope: ExchangePurchaseStorageScope = "local",
 ): void => {
   localStorage.removeItem(getStorageKey(tripId, scope));
+};
+
+export const hasInitializedCloudExchangeHistory = (tripId: string): boolean =>
+  localStorage.getItem(getCloudInitializedKey(tripId)) === "true";
+
+export const markCloudExchangeHistoryInitialized = (tripId: string): void => {
+  localStorage.setItem(getCloudInitializedKey(tripId), "true");
 };
