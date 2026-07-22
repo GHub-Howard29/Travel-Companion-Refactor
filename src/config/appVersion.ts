@@ -2,7 +2,7 @@
  * App 發布版本設定。
  * 發布新版本時，請同步更新 public/app-version.json。
  */
-export const APP_VERSION = "3.3.0";
+export const APP_VERSION = "3.3.1";
 
 export const RELEASE_DATE = "2026-07-20";
 

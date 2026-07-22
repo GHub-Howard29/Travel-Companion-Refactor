@@ -26,6 +26,7 @@ export interface TripEditorInput {
   editorEmails: string[];
   currencyCode: string;
   currencySymbol: string;
+  sidebarConfig?: SidebarItemConfig[];
 }
 
 // 2. 對應詳細行程中的單一時間軸項目
